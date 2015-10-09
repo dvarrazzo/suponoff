@@ -3,6 +3,8 @@ import json
 import logging
 import re
 from collections import defaultdict, OrderedDict
+import urllib.parse
+import redis
 
 import configparser
 import xmlrpc.client
@@ -21,21 +23,32 @@ from pathlib import Path
 LOG = logging.getLogger(__name__)
 
 
-def _get_supervisor(hostname):
-    supervisor = xmlrpc.client.ServerProxy("http://{}:9001".format(hostname),
-                                           verbose=False)
+def _get_supervisor(url):
+    supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
     return supervisor
 
 
-def _get_monhelper(hostname):
-    monhelper = xmlrpc.client.ServerProxy(
-        "http://{}:9002".format(hostname), verbose=False)
+def _get_monhelper_url(sup_url):
+    url = urllib.parse.urlparse(sup_url)
+    port = url.port
+    if port is None:
+        raise ValueError("no port in url: %s" % sup_url)
+    bits = list(url.netloc.partition(str(port)))
+    bits[1] = str(port + 1)
+    new_url = url._replace(netloc=''.join(bits))
+    return urllib.parse.urlunparse(new_url)
+
+def _get_monhelper(url):
+    # Assume monhelper is running at port + 1 of supervisor
+    url = _get_monhelper_url(url)
+    monhelper = xmlrpc.client.ServerProxy(url, verbose=False)
     return monhelper
 
 
-def _get_server_data(hostname, resource_pids, metadata):
-    supervisor = _get_supervisor(hostname)
-    monhelper = _get_monhelper(hostname)
+def _get_server_data(url, resource_pids, metadata):
+    supervisor = _get_supervisor(url)
+    monhelper = _get_monhelper(url)
+    hostname = urllib.parse.urlparse(url).hostname
     try:
         processes = supervisor.supervisor.getAllProcessInfo()
         server = {}
@@ -73,7 +86,7 @@ def _get_server_data(hostname, resource_pids, metadata):
                     list(int(x) for x in resource_pids))
             except ConnectionRefusedError:
                 LOG.warning("Remote server %s doesn't have the monhelper"
-                            " extension", hostname)
+                            " extension", url)
             else:
                 for pid, resources in resources_dict.items():
                     for process in processes:
@@ -86,18 +99,26 @@ def _get_server_data(hostname, resource_pids, metadata):
     return server
 
 
+def _get_redis():
+    return redis.StrictRedis(
+        connection_pool=redis.ConnectionPool.from_url(
+            settings.SUP_REDIS_URL))
+
 def _get_data(server_pids, metadata):
     # hostname -> group -> process
-    services_by_host = OrderedDict()
-    servers = sorted(settings.SUPERVISORS)
+    rv = OrderedDict()
+    r = _get_redis()
+    servers = sorted(r.get(k).decode() for k in r.scan_iter('sup-url-*'))
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-        for hostname in servers:
-            server_data = executor.submit(_get_server_data, hostname,
-                                          server_pids.get(hostname), metadata)
-            services_by_host[hostname] = server_data
-        for hostname in servers:
-            services_by_host[hostname] = services_by_host[hostname].result()
-    return services_by_host
+        for url in servers:
+            hostname = urllib.parse.urlparse(url).hostname
+            server_data = executor.submit(_get_server_data, url,
+                                          server_pids.get(url), metadata)
+            rv[hostname] = server_data
+        for url in servers:
+            hostname = urllib.parse.urlparse(url).hostname
+            rv[hostname] = rv[hostname].result()
+    return rv
 
 
 def get_data(request):
@@ -112,10 +133,10 @@ def get_data(request):
 @ensure_csrf_cookie
 def home(request, template_name="suponoff/index.html"):
     metadata, tags_config, taggroups_dict = _get_metadata_conf()
-    services_by_host = _get_data({}, metadata)
+    rv = _get_data({}, metadata)
 
     all_tags = set()
-    for server_data in services_by_host.values():
+    for server_data in rv.values():
         for group in server_data.values():
             all_tags.update(group['tags'])
 
@@ -129,7 +150,7 @@ def home(request, template_name="suponoff/index.html"):
 
     # sort everything
     data = []
-    for server, groups in sorted(services_by_host.items()):
+    for server, groups in sorted(rv.items()):
         data.append((server, sorted(groups.items())))
 
     context = {
