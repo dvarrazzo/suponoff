@@ -168,6 +168,7 @@ def split_namespec(namespec):
 
 
 def main():
+    opt = parse_cmdline()
     logging.basicConfig(format="%(asctime)s %(levelname)s "
                                "%(filename)s:%(lineno)d %(message)s")
 
@@ -175,10 +176,23 @@ def main():
 
     LOG.info("psutil version %s at %s", psutil.__version__, psutil.__file__)
 
-    server = SimpleXMLRPCServer(("0.0.0.0", 9002))
+    server = SimpleXMLRPCServer((opt.ip, opt.port))
+    LOG.info("listening at %s:%s", opt.ip, opt.port)
     server.register_introspection_functions()
     server.register_instance(MonHelperRPCInterface())
     server.serve_forever()
+
+def parse_cmdline():
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--ip', default='0.0.0.0',
+        help="ip address to listen on [default: %(default)s]")
+    parser.add_argument('--port', type=int, default=9002,
+        help="port to listen on [default: %(default)s]")
+
+    opt = parser.parse_args()
+
+    return opt
 
 if __name__ == '__main__':
     main()

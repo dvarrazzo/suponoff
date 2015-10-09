@@ -4,10 +4,17 @@ suponoff is a web interface to supervisor
 suponoff (short for Supervisor On/Off) is a Django app to control supervisor and
 monitor the programs running under supervisor.
 
-You give the app a list of server hostnames to connect to, and it connects to
-port 9001 of each of the servers, where supervisor normally listens.
+Every supervisor you want to monitor shoud register their state into a redis
+instance. This is done by the script ``sup_broadcast.py``, which is an event
+listener that can be configured in the supervisor itself with a config such::
+
+    [eventlistener:sup_broadcast]
+    command=python sup_broadcast.py http://this.sup.host:9001 redis://somewhere:6379
+    events=PROCESS_STATE,TICK_60
+
 Optionally, you may run the provided program ``suponoff-monhelper.py``, which
-listens on port 9002 and provides the following additional functionalities:
+should listen on the port following supervisor's (usually 9002) and provides
+the following additional functionalities:
 
 1. Reports back the resource limits and usage of the processes, such as
    number of file descriptors, memory, cpu, number of threads and subprocesses;
@@ -20,9 +27,9 @@ listens on port 9002 and provides the following additional functionalities:
 
 To use this app, create a Django project that includes ``suponoff`` in its
 applications and includes the URLs from ``suponoff.urls``.  Then you add the
-``SUPERVISORS`` setting (a list of hostnames).  The web interface can also add
-"tags" to each program, allowing you to filter by tags.  For an example, see the
-``demo`` project in the source distribution.
+``SUP_REDIS_URL`` setting (where to get registered supervisors).  The web
+interface can also add "tags" to each program, allowing you to filter by tags.
+For an example, see the ``demo`` project in the source distribution.
 
 Screenshot:
 -----------
