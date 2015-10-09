@@ -23,12 +23,20 @@ from pathlib import Path
 LOG = logging.getLogger(__name__)
 
 
-def _get_supervisor(url):
+def _get_supervisor_url(name):
+    r = _get_redis()
+    # TODO: what if not found?
+    return r.get('sup-url-%s' % name).decode('utf8')
+
+def _get_supervisor(name):
+    url = _get_supervisor_url(name)
     supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
+    print('supervisor_url', url)
     return supervisor
 
 
-def _get_monhelper_url(sup_url):
+def _get_monhelper_url(name):
+    sup_url = _get_supervisor_url(name)
     url = urllib.parse.urlparse(sup_url)
     port = url.port
     if port is None:
@@ -38,17 +46,17 @@ def _get_monhelper_url(sup_url):
     new_url = url._replace(netloc=''.join(bits))
     return urllib.parse.urlunparse(new_url)
 
-def _get_monhelper(url):
+def _get_monhelper(name):
     # Assume monhelper is running at port + 1 of supervisor
-    url = _get_monhelper_url(url)
+    url = _get_monhelper_url(name)
+    print('monhelper_url', url)
     monhelper = xmlrpc.client.ServerProxy(url, verbose=False)
     return monhelper
 
 
-def _get_server_data(url, resource_pids, metadata):
-    supervisor = _get_supervisor(url)
-    monhelper = _get_monhelper(url)
-    hostname = urllib.parse.urlparse(url).hostname
+def _get_server_data(name, resource_pids, metadata):
+    supervisor = _get_supervisor(name)
+    monhelper = _get_monhelper(name)
     try:
         processes = supervisor.supervisor.getAllProcessInfo()
         server = {}
@@ -75,7 +83,7 @@ def _get_server_data(url, resource_pids, metadata):
                 group_tags = set()
                 for server_regex, group_regex, tags in metadata:
                     group_match = group_regex.match(group_name)
-                    server_match = server_regex.match(hostname)
+                    server_match = server_regex.match(name)
                     if group_match and server_match:
                         group_tags.update(tags)
                 group['tags'] = list(sorted(group_tags))
@@ -86,7 +94,7 @@ def _get_server_data(url, resource_pids, metadata):
                     list(int(x) for x in resource_pids))
             except ConnectionRefusedError:
                 LOG.warning("Remote server %s doesn't have the monhelper"
-                            " extension", url)
+                            " extension", name)
             else:
                 for pid, resources in resources_dict.items():
                     for process in processes:
@@ -108,16 +116,14 @@ def _get_data(server_pids, metadata):
     # hostname -> group -> process
     rv = OrderedDict()
     r = _get_redis()
-    servers = sorted(r.get(k).decode() for k in r.scan_iter('sup-url-*'))
+    servers = sorted(k[8:].decode('utf8') for k in r.scan_iter('sup-url-*'))
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-        for url in servers:
-            hostname = urllib.parse.urlparse(url).hostname
-            server_data = executor.submit(_get_server_data, url,
-                                          server_pids.get(url), metadata)
-            rv[hostname] = server_data
-        for url in servers:
-            hostname = urllib.parse.urlparse(url).hostname
-            rv[hostname] = rv[hostname].result()
+        for name in servers:
+            server_data = executor.submit(_get_server_data, name,
+                                          server_pids.get(name), metadata)
+            rv[name] = server_data
+        for name in servers:
+            rv[name] = rv[name].result()
     return rv
 
 
