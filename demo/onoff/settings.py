@@ -118,7 +118,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticroot", "static")
 
 
-SUP_REDIS_URL = "redis://vmollydev:6380/0"
+SUP_REDIS_URL = os.environ.get('SUP_REDIS_URL', "redis://localhost:6379/0")
 
 METADATA_DIR = os.path.join(BASE_DIR, "onoff-metadata.conf.d")
 

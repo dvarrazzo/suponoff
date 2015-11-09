@@ -4,7 +4,6 @@ import logging
 import re
 from collections import defaultdict, OrderedDict
 import urllib.parse
-import redis
 
 import configparser
 import xmlrpc.client
@@ -17,26 +16,23 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 from pathlib import Path
 
+from supcast import supcredis
+
 # from pprint import pformat
 
 
 LOG = logging.getLogger(__name__)
 
 
-def _get_supervisor_url(name):
-    r = _get_redis()
-    # TODO: what if not found?
-    return r.get('sup-url-%s' % name).decode('utf8')
-
 def _get_supervisor(name):
-    url = _get_supervisor_url(name)
+    url = supcredis.get_url(name)
     supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
     print('supervisor_url', url)
     return supervisor
 
 
 def _get_monhelper_url(name):
-    sup_url = _get_supervisor_url(name)
+    sup_url = supcredis.get_url(name)
     url = urllib.parse.urlparse(sup_url)
     port = url.port
     if port is None:
@@ -107,16 +103,11 @@ def _get_server_data(name, resource_pids, metadata):
     return server
 
 
-def _get_redis():
-    return redis.StrictRedis(
-        connection_pool=redis.ConnectionPool.from_url(
-            settings.SUP_REDIS_URL))
-
 def _get_data(server_pids, metadata):
     # hostname -> group -> process
     rv = OrderedDict()
-    r = _get_redis()
-    servers = sorted(k[8:].decode('utf8') for k in r.scan_iter('sup-url-*'))
+    servers = supcredis.get_sups()
+    print (servers)
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
         for name in servers:
             server_data = executor.submit(_get_server_data, name,
