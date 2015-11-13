@@ -1,12 +1,15 @@
 import re
 import logging
 import urllib.parse
+from collections import defaultdict
 
 import redis
 
 from . import config
 
 logger = logging.getLogger()
+
+TIMEOUT = 100
 
 class Key:
 	def __init__(self, attr, sup=None, group=None, proc=None):
@@ -27,7 +30,7 @@ class Key:
 		if self.group:
 			rv.append("group[%s]" % self.group)
 
-		if self.proc and self.proc != self.group:
+		if self.proc:
 			rv.append("proc[%s]" % self.proc)
 
 		rv.append('.')
@@ -62,11 +65,16 @@ def register():
 def set_process_state(data):
 	group = data['group']
 	proc = data['name']
-	setex(Key("state", group=group, proc=proc), data['statename'])
+	setex(Key("statename", group=group, proc=proc), data['statename'])
 	if data.get('pid'):
 		setex(Key("pid", group=group, proc=proc), data['pid'])
 	else:
 		delete(Key("pid", group=group, proc=proc))
+
+def remove_group(group):
+	r = server()
+	for k in r.scan_iter(r'sup\[[^\]]*\]group\[%s\]*' % group):
+		delete(k)
 
 def get_sups():
 	r = server()
@@ -87,13 +95,43 @@ def get_url(sup):
 
 	return rv
 
+def get_all_state():
+	# recursive defaultdict!
+	rdict = lambda: defaultdict(rdict)
+	rv = rdict()
+
+	# Supervisors attributes
+	r = server()
+	for rk in r.scan_iter('sup\[*'):
+		v = r.get(rk)
+		if v is None: continue
+		v = v.decode('utf8')
+		k = Key.parse(rk)
+
+		if k.group is None:
+			rv['supervisors'][k.sup][k.attr] = v
+		elif k.proc is None:
+			rv['supervisors'][k.sup] \
+				['groups'][k.group][k.attr] = v
+		else:
+			rv['supervisors'][k.sup] \
+				['groups'][k.group] \
+				['processes'][k.proc][k.attr] = v
+
+	return rv
+
+def set_group_tags(group, tags):
+	k = str(Key('tags', group=group))
+	setex(k, ','.join(tags))
+
+
 def delete(k):
-	logger.info("removing %s", k)
+	logger.debug("removing %s", k)
 	server().delete(str(k))
 
 def setex(k, value):
-	logger.info("storing %s -> %s", k, value)
-	server().setex(str(k), 100, value)
+	logger.debug("storing %s -> %s", k, value)
+	server().setex(str(k), TIMEOUT, value)
 
 
 _redis = None

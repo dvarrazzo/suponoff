@@ -12,10 +12,11 @@ from supcast import handlers
 from supcast import supcredis
 
 import logging
-logger = logging.getLogger()
 logging.basicConfig(
-	level=logging.DEBUG,
+	level=logging.INFO,
 	format='%(asctime)s %(levelname)s %(message)s')
+
+logger = logging.getLogger()
 
 def write_stdout(s):
 	sys.stdout.write(s)

@@ -1,4 +1,12 @@
+"""
+Configuration of the events handler
+"""
+
+from glob import glob
 from argparse import ArgumentParser
+from configparser import ConfigParser
+
+import logging
 
 _cfg = None
 
@@ -24,13 +32,52 @@ def set_config(cfg):
 	global _cfg
 	_cfg = cfg
 
+	from . import tags
+	tags.set_all()
 
-def parse_command_line():
+def get_group(name):
+	cfg = get_config()
+	for sectname, sect in cfg.items():
+		if ':' in sectname and sectname.rsplit(':', 1)[1] == name:
+			return dict(sect)
+
+
+def parse_command_line(args=None):
 	parser = ArgumentParser(description=__doc__)
-	parser.add_argument('url', metavar="URL",
-		help="url to reach this supervisor")
-	parser.add_argument('redis', metavar="REDIS",
-		help="redis connection url instance to broadcast to")
+	parser.add_argument('-c', '--config', metavar="URL",
+		help="supervisor configuration file [default: %(defaults)s]")
+	parser.add_argument('--verbose', action='store_true',
+		help="talk more")
 
-	opt  = parser.parse_args()
-	return opt
+	args = parser.parse_args(args)
+	try:
+		conf = parse_config_file(args.config)
+	except Exception as e:
+		parser.error("error reading config file %s: %s" % (args.config, e))
+
+	logger = logging.getLogger()
+	if args.verbose:
+		logger.setLevel(logging.DEBUG)
+	else:
+		logger.setLevel(logging.INFO)
+
+	return conf
+
+def parse_config_file(filename):
+	cp = ConfigParser()
+	with open(filename) as f:
+		cp.readfp(f, filename=filename)
+
+	if cp.has_option('include', 'files'):
+		for fn in glob(cp.get('include', 'files')):
+			cp.read(fn)
+
+	cp.redis = cp.get('sup_broadcast', 'redis')
+	cp.url = cp.get('sup_broadcast', 'supervisor_url')
+	cp.config_file = filename
+
+	return cp
+
+def reread():
+	cfg = get_config()
+	set_config(parse_config_file(cfg.config_file))
