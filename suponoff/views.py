@@ -18,8 +18,6 @@ from pathlib import Path
 
 from supcast import supcredis
 
-# from pprint import pformat
-
 
 LOG = logging.getLogger(__name__)
 
@@ -27,7 +25,6 @@ LOG = logging.getLogger(__name__)
 def _get_supervisor(name):
     url = supcredis.get_url(name)
     supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
-    print('supervisor_url', url)
     return supervisor
 
 
@@ -45,7 +42,6 @@ def _get_monhelper_url(name):
 def _get_monhelper(name):
     # Assume monhelper is running at port + 1 of supervisor
     url = _get_monhelper_url(name)
-    print('monhelper_url', url)
     monhelper = xmlrpc.client.ServerProxy(url, verbose=False)
     return monhelper
 
@@ -107,7 +103,6 @@ def _get_data(server_pids, metadata):
     # hostname -> group -> process
     rv = OrderedDict()
     servers = supcredis.get_sups()
-    print (servers)
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
         for name in servers:
             server_data = executor.submit(_get_server_data, name,
