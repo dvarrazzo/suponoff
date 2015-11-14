@@ -102,7 +102,7 @@ $(document).ready(function() {
 		$('#page-loading').fadeOut(1000);
 	})
 
-	setInterval(update, UPDATE_INTERVAL)
+	// setInterval(update, UPDATE_INTERVAL)
 
     $('#tag-filter-mode').change(function() {
       TAG_FILTER_MODE_AND = $(this).prop('checked')
@@ -154,10 +154,10 @@ function update_data_received(data)
 {
 	//console.log( 'data:', data);
 
-	for (var server_name in data) {
-		var server = data[server_name]
-		for (var group_name in server) {
-			var group = server[group_name]
+	for (var server_name in data.supervisors) {
+		var server = data.supervisors[server_name]
+		for (var group_name in server.groups) {
+			var group = server.groups[group_name]
 			var group_alert_level = 0
 			var group_num_processes_running = 0
 			for (var process_idx in group.processes) {
@@ -231,7 +231,7 @@ function update_process(server_name, group_name, process)
 		// based on the last reported levels, otherwise they revert back to green.
 		program_div[0].resources = process.resources
 	}
-	var resources = program_div[0].resources
+	var resources = program_div[0] && program_div[0].resources
 	if (resources !== undefined) {
 		// modify the alert level based on resource levels
 		if ('fileno' in resources && 'max_fileno' in resources)
@@ -612,3 +612,36 @@ window.on_show_no_tags_clicked = function ()
 	filter_by_tags()
 }
 
+
+function data2procs(data) {
+    var procs = [];
+    for (var sname in data.supervisors) {
+        var sdata = data.supervisors[sname];
+        var stags = sdata.tags && sdata.tags.split(',') || [];
+        for (var gname in sdata.groups) {
+            var gdata = sdata.groups[gname];
+            console.log(gname, gdata.tags);
+            var gtags = gdata.tags && gdata.tags.split(',') || [];
+            for (var pname in gdata.processes) {
+                var proc = gdata.processes[pname];
+                proc.supervisor = sname;
+                proc.group = gname;
+                proc.process = pname;
+                proc.tags = $.unique(stags.concat(gtags));
+
+                // Convert tags into attributes too
+                for (var i in proc.tags) {
+                    var tag = proc.tags[i];
+                    var c = tag.search(':');
+                    if (c > -1) {
+                        proc[tag.substring(0,c)] = tag.substring(c+1);
+                    } else {
+                        proc[tag] = true;
+                    }
+                }
+                procs.push(proc);
+            }
+        }
+    }
+    return procs;
+}
