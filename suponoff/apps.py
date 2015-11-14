@@ -1,17 +1,11 @@
 from django.apps import AppConfig
 from django.conf import settings
 
-import supcast.config
-
-class DummyConf:
-    def items(self):
-        return []
+import supcast
 
 class SupOnOffAppConfig(AppConfig):
     name = 'suponoff'
     verbose_name = "Supervisor On/Off interface"
 
     def ready(self):
-        conf = DummyConf()
-        conf.redis = settings.SUP_REDIS_URL
-        supcast.config.set_config(conf)
+        supcast.set_redis_url(settings.SUP_REDIS_URL)

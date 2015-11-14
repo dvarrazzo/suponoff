@@ -16,7 +16,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 from pathlib import Path
 
-from supcast import supcredis
+import supcast
 
 
 LOG = logging.getLogger(__name__)
@@ -99,12 +99,12 @@ def _get_server_data(name, resource_pids, metadata):
     return server
 
 def get_data(request):
-    data = json.dumps(supcredis.get_all_state())
+    data = json.dumps(supcast.get_all_state())
     return HttpResponse(data, content_type='application/json')
 
 @ensure_csrf_cookie
 def home(request, template_name="suponoff/index.html"):
-    data = supcredis.get_all_state()
+    data = supcast.get_all_state()
 
     context = {
         "data": json.dumps(data),

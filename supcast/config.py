@@ -35,6 +35,23 @@ def set_config(cfg):
     from . import tags
     tags.set_all()
 
+def set_redis_url(url):
+    """
+    Only set the redis url
+
+    Using this instead of set_config() it is possible to use the supcast
+    module to read the state out of redis (i.e. as a client would do, as
+    opposite as what sup_broadcast does.
+    """
+    class DummyConf:
+        def items(self):
+            return []
+
+    conf = DummyConf()
+    conf.redis = url
+    set_config(conf)
+
+
 def get_group(name):
     cfg = get_config()
     for sectname, sect in cfg.items():
@@ -44,7 +61,7 @@ def get_group(name):
 
 def parse_command_line(args=None):
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument('-c', '--config', metavar="URL",
+    parser.add_argument('-c', '--config', metavar="FILE",
         help="supervisor configuration file [default: %(defaults)s]")
     parser.add_argument('--verbose', action='store_true',
         help="talk more")
