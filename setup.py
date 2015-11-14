@@ -20,6 +20,8 @@ if __name__ == '__main__':
         scripts=[
             'suponoff-monhelper.py'
         ],
+        test_suite='nose.collector',
+        tests_require= ['nose'],
         classifiers=[
             "Development Status :: 4 - Beta",
             "Environment :: Web Environment",
