@@ -20,11 +20,6 @@ if __name__ == '__main__':
         scripts=[
             'suponoff-monhelper.py'
         ],
-
-        install_requires=[
-            "Django >= 1.7",  # just because I only tested with Django 1.7...
-        ],
-
         classifiers=[
             "Development Status :: 4 - Beta",
             "Environment :: Web Environment",
