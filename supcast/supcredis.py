@@ -103,10 +103,10 @@ def get_all_state():
 	# Supervisors attributes
 	r = server()
 	for rk in r.scan_iter('sup\[*'):
+		k = Key.parse(rk)
 		v = r.get(rk)
 		if v is None: continue
-		v = v.decode('utf8')
-		k = Key.parse(rk)
+		v = parse_attr(k.attr, v)
 
 		if k.group is None:
 			rv['supervisors'][k.sup][k.attr] = v
@@ -121,6 +121,17 @@ def get_all_state():
 	norec = lambda d: { k: norec(v) if isinstance(v, dict) else v
 		for k, v in d.items() }
 	return norec(rv)
+
+def parse_attr(attr, v):
+	if v is None:
+		return None
+	v = v.decode('utf8')
+	if attr == 'tags':
+		v = [ t.strip() for t in v.split(',') ]
+	elif attr == 'pid':
+		v = int(v)
+	return v
+
 
 
 def set_group_tags(group, tags):

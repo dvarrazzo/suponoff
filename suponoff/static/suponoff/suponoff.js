@@ -617,11 +617,10 @@ function data2procs(data) {
     var procs = [];
     for (var sname in data.supervisors) {
         var sdata = data.supervisors[sname];
-        var stags = sdata.tags && sdata.tags.split(',') || [];
+        var stags = sdata.tags || [];
         for (var gname in sdata.groups) {
             var gdata = sdata.groups[gname];
-            console.log(gname, gdata.tags);
-            var gtags = gdata.tags && gdata.tags.split(',') || [];
+            var gtags = gdata.tags || [];
             for (var pname in gdata.processes) {
                 var proc = gdata.processes[pname];
                 proc.supervisor = sname;
