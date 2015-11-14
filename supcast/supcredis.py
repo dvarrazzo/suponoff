@@ -118,7 +118,10 @@ def get_all_state():
 				['groups'][k.group] \
 				['processes'][k.proc][k.attr] = v
 
-	return rv
+	norec = lambda d: { k: norec(v) if isinstance(v, dict) else v
+		for k, v in d.items() }
+	return norec(rv)
+
 
 def set_group_tags(group, tags):
 	k = str(Key('tags', group=group))
