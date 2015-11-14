@@ -98,57 +98,16 @@ def _get_server_data(name, resource_pids, metadata):
         monhelper("close")()
     return server
 
-
-def _get_data(server_pids, metadata):
-    # hostname -> group -> process
-    rv = OrderedDict()
-    servers = supcredis.get_sups()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-        for name in servers:
-            server_data = executor.submit(_get_server_data, name,
-                                          server_pids.get(name), metadata)
-            rv[name] = server_data
-        for name in servers:
-            rv[name] = rv[name].result()
-    return rv
-
-
 def get_data(request):
-    #resource_pids = set(int(x) for x in request.GET.getlist('pid[]'))
-    data = json.loads(request.body.decode("ascii"))
-    #LOG.debug("data: %r", data)
-    data = _get_data(data['server_pids'], [])
-    data_json = json.dumps(data)
-    return HttpResponse(data_json, content_type='application/json')
-
+    data = json.dumps(supcredis.get_all_state())
+    return HttpResponse(data, content_type='application/json')
 
 @ensure_csrf_cookie
 def home(request, template_name="suponoff/index.html"):
-    metadata, tags_config, taggroups_dict = _get_metadata_conf()
-    rv = _get_data({}, metadata)
-
-    all_tags = set()
-    for server_data in rv.values():
-        for group in server_data.values():
-            all_tags.update(group['tags'])
-
-    tags_by_group = defaultdict(set)
-    for tag_name in all_tags:
-        tag = tags_config[tag_name]
-        tags_by_group[tag.taggroup].add(tag_name)
-    taggroups = []
-    for name, tags in sorted(tags_by_group.items()):
-        taggroups.append((taggroups_dict[name].label, sorted(tags)))
-
-    # sort everything
-    data = []
-    for server, groups in sorted(rv.items()):
-        data.append((server, sorted(groups.items())))
+    data = supcredis.get_all_state()
 
     context = {
-        "data": data,
-        "taggroups": taggroups,
-        'tags_config': tags_config,
+        "data": json.dumps(data),
         "SITE_ROOT": settings.SITE_ROOT,
     }
 

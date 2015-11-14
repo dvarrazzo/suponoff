@@ -15,6 +15,27 @@
 
 	<style>
 
+	div.box {
+		float: left;
+		border: 1px solid;
+		border-radius:10px;
+		background-color: #eee;
+		padding: 10px;
+		margin: 10px;
+		background: linear-gradient(#fff, #ccd);
+		box-shadow: 5px 5px 5px #aaa;
+	}
+
+	.box .bg-success {
+		background: #00FF00;
+	}
+	.box .bg-warning {
+		background: #FFFF00;
+	}
+	.box .bg-danger {
+		background: #FF5930;
+	}
+
 	div.server {
 		float: left;
 		border: 1px solid;
@@ -89,8 +110,6 @@
 
   	{% block body %}
 
-	<div id="page-loading"></div>
-
   	{% block content %}
 
 	<table>
@@ -128,7 +147,7 @@
 		<a href="#" onclick="on_show_no_tags_clicked()">[none]</a>
 	</div>
 
-	{% for server, groups in data %}
+	{% for server, groups in nowhere %}
 
 	<div class="server" id="server-{{server}}" data-server-name="{{ server }}">
 	  <h3>Server: <a href="http://{{ server }}:9001">{{ server }}</a>
@@ -254,6 +273,53 @@
 
   	{% endblock content %}
 
+  <div id="rootbox"></div>
+
+  <div id="protos" style="display:none">
+    <div class="box">
+      <h3><span class="attname"></span>: <span class="attvalue"></span>
+        <div style="float: right">
+          <button
+            type="button" class="btn btn-info btn-xs btn-expand"
+            >Expand</button>
+          <button type="button"
+            class="btn btn-success btn-xs btn-start"
+            >Start</button>
+          <button type="button"
+            class="btn btn-success btn-xs btn-startall"
+            >Start All</button>
+          <button
+            type="button" class="btn btn-danger btn-xs btn-stop"
+            >Stop</button>
+          <button
+            type="button" class="btn btn-danger btn-xs btn-stopall"
+            >Stop All</button>
+        </div>
+      </h3>
+      <div class="children" style="display:none"></div>
+    </div>
+
+    <div class="supervisor" /*id="sup-NAME"*/ /*data-name="NAME" */>
+      <h3>Server: <a class="url" href="#"></a>
+      <div style="float: right">
+        <button type="button" class="btn btn-success btn-xs startall"
+                data-loading-text="Starting all programs..."
+                onclick="on_startall_clicked(this)"
+                >
+                Start All
+        </button>
+        <button type="button" class="btn btn-danger btn-xs stopall"
+                data-loading-text="Stopping all programs..."
+                onclick="on_stopall_clicked(this)"
+                >
+                Stop All
+         </button>
+      </div>
+      </h3>
+      <div class="groups"></div>
+    </div>
+  </div>
+
 	<div class="modal fade" id="show-logs-dialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	  <div class="modal-dialog modal-lg">
 		<div class="modal-content">
@@ -280,6 +346,77 @@
 	<script src="{% static "suponoff/suponoff.js" %}"></script>
 
   	{% endblock body %}
+
+  <script>
+    // TODO: global only for debugging
+    data = {{data|safe}};
+    processes = data2procs(data);
+
+    // TODO: interface to define the trees
+    axes = ['supervisor', 'group', 'process'];
+
+    function render_box(process, target, axes) {
+      if (axes.length) {
+        var attr = axes[0];
+        var val = process[attr] || 'none';
+        var cls = 'attr-' + attr + '-' + val;
+        var box = target.find('.' + cls).first();
+        if (!box.length) {
+          var box = $('#protos .box').clone().addClass(cls);
+          box.find('.attname').text(attr);
+          box.find('.attvalue').text(val);
+          target.append(box);
+        }
+        render_box(process, box.find('.children').first(), axes.slice(1));
+      }
+      else {
+        target.parent().data('process', process);
+      }
+    }
+
+    function collapse_single(box) {
+      var children = box.children('.children').children('.box');
+      if (children.length == 1) {
+        var child = children.detach();
+        box.replaceWith(children);
+        box = children;
+      }
+      box.children('.children').children('.box').each(
+        function() { collapse_single($(this)); });
+    }
+
+    function set_buttons_visibility(box) {
+      var children = box.children('.children').children('.box');
+      if (children.length == 0) {
+        box.find('.btn-expand').first().remove();
+        box.find('.btn-startall').first().remove();
+        box.find('.btn-stopall').first().remove();
+      }
+      else {
+        box.find('.btn-start').first().remove();
+        box.find('.btn-stop').first().remove();
+      }
+    }
+
+    $(document).ready(function() {
+      $(processes).each(function() {
+        render_box(this, $('#rootbox'), axes);
+      });
+
+      $('#rootbox').children('.box').each(
+        function () { collapse_single($(this)); });
+
+      $('#rootbox').find('.box').each(
+        function() { set_buttons_visibility($(this)); });
+
+      $('#rootbox').on("click", ".btn-expand", function() {
+        var box = $(this).parents('.box').first()
+        box.find('.children').first().toggle();
+        var btn = box.find('.btn-expand').first();
+        btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
+      });
+    });
+  </script>
 
   </body>
 
