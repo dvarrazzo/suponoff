@@ -351,6 +351,7 @@
     // TODO: global only for debugging
     data = {{data|safe}};
     processes = data2procs(data);
+    got_axes = collect_axes(processes);
 
     // TODO: interface to define the trees
     axes = ['supervisor', 'group', 'process'];
