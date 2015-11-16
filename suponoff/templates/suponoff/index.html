@@ -117,7 +117,7 @@
 	<tr>
 	<td><div  style="margin: 2px">{{ taggroup_label }}</div></td>
 	<td>
-	<div id="tag-toggles" style="margin: 2px">
+	<div class="tag-toggles" style="margin: 2px">
 		<div class="taggroup btn-group" data-toggle="buttons">
 			{% for tag in tags %}
 			{% with tag_config=tags_config|get_item:tag %}
@@ -139,6 +139,9 @@
 	</tr>
 	{% endfor %}
 	</table>
+
+  <table id="tags_control">
+  </table>
 
 	<div class="clearfix" style="clear:both; margin: 10px">
 		Mode: <input id="tag-filter-mode" type="checkbox" data-toggle="toggle"
@@ -310,6 +313,22 @@
       </div>
     </div>
 
+    <table>
+      <tr class="tags_group">
+        <td><div class="label" style="margin: 2px">tags group</div></td>
+        <td class="tags"></td>
+      </tr>
+    </table>
+
+    <div class="tag-toggles" style="margin: 2px">
+      <div class="taggroup btn-group" data-toggle="buttons">
+        <label class="btn btn-primary active">
+          <input type="checkbox" data-tag=tag />
+          <span class="tag">tag</span>
+        </label>
+      </div>
+    </div>
+
     <div class="supervisor" /*id="sup-NAME"*/ /*data-name="NAME" */>
       <h3>Server: <a class="url" href="#"></a>
       <div style="float: right">
@@ -359,13 +378,10 @@
   	{% endblock body %}
 
   <script>
-    // TODO: global only for debugging
-    data = {{data|safe}};
+    var data = {{data|safe}};
     processes = data2procs(data);
-    got_axes = collect_axes(processes);
 
-    // TODO: interface to define the trees
-    axes = ['supervisor', 'group'];
+    axes = [];
 
     function render_box(process, target, axes) {
       var attr, val, cls;
@@ -428,9 +444,8 @@
       }
     }
 
-    function render_all() {
+    function render_boxes(axes) {
       var root = $('#rootbox');
-
       root.empty();
 
       $(processes).each(function() {
@@ -441,6 +456,21 @@
         function () { collapse_single($(this)); });
     }
 
+    function render_tags_controls() {
+      got_axes = collect_axes(processes);
+      $(got_axes).each(function () {
+        console.log(this);
+        var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
+        tr.find('.label').text(this.label);
+        $(this.values).each(function () {
+          console.log(this);
+          var btn = $('#protos .tags-toggles').clone()
+            .appendTo(tr.find('td.tags'));
+          btn.find('.tag').text(this);
+        });
+      });
+    }
+
     $(document).ready(function() {
       $('#rootbox').on("click", ".btn-expand", function() {
         var box = $(this).parents('.box').first()
@@ -449,7 +479,8 @@
         btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
       });
 
-      render_all();
+      render_tags_controls();
+      render_boxes(axes);
     });
   </script>
 
