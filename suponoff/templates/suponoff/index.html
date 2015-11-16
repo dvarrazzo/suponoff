@@ -354,6 +354,7 @@
     got_axes = collect_axes(processes);
 
     // TODO: interface to define the trees
+    // NOTE: currently the process should always be the last tag
     axes = ['supervisor', 'group', 'process'];
 
     function render_box(process, target, axes) {
@@ -366,7 +367,21 @@
           var box = $('#protos .box').clone().addClass(cls);
           box.find('.attname').text(attr);
           box.find('.attvalue').text(val);
-          target.append(box);
+          box.data('attvalue', val);
+          // Find the place to insert to keep them in order
+          var cc = target.children();
+          var ins = false;
+          for (var i = 0, ii = (cc.length); i < ii; i++) {
+            var ch = $(cc[i]);
+            if (val < ch.data('attvalue')) {
+              ch.before(box);
+              ins = true;
+              break;
+            }
+          }
+          if (!ins) {
+            target.append(box);
+          }
         }
         render_box(process, box.find('.children').first(), axes.slice(1));
       }
@@ -399,23 +414,30 @@
       }
     }
 
-    $(document).ready(function() {
+    function render_all() {
+      var root = $('#rootbox');
+
+      root.empty();
+
       $(processes).each(function() {
-        render_box(this, $('#rootbox'), axes);
+        render_box(this, root, axes);
       });
 
-      $('#rootbox').children('.box').each(
+      root.children('.box').each(
         function () { collapse_single($(this)); });
-
-      $('#rootbox').find('.box').each(
+      root.find('.box').each(
         function() { set_buttons_visibility($(this)); });
+    }
 
+    $(document).ready(function() {
       $('#rootbox').on("click", ".btn-expand", function() {
         var box = $(this).parents('.box').first()
         box.find('.children').first().toggle();
         var btn = box.find('.btn-expand').first();
         btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
       });
+
+      render_all();
     });
   </script>
 
