@@ -95,7 +95,7 @@ $(document).ready(function() {
 	})
 
 
-	$('#tag-toggles input').change(filter_by_tags)
+	$('.tag-toggles input').change(filter_by_tags)
 
 	update().done(function(){
 		//console.log('first update done');
@@ -547,7 +547,7 @@ function filter_by_tags()
 	var tag
 	var i
 	var enabled_tags = {}
-	$('#tag-toggles > div.taggroup input:checked').each(function (idx, checkbox) {
+	$('.tag-toggles > div.taggroup input:checked').each(function (idx, checkbox) {
 		//console.log(checkbox)
 		var tag = $(checkbox).attr('data-tag')
 		enabled_tags[tag] = true
@@ -595,7 +595,7 @@ function filter_by_tags()
 
 window.on_show_all_tags_clicked = function ()
 {
-	$('#tag-toggles input').each(function (idx, checkbox) {
+	$('.tag-toggles input').each(function (idx, checkbox) {
 		window.console.log(checkbox)
 		$(checkbox).prop('checked', true)
 		$(checkbox).parent().addClass('active')
@@ -605,7 +605,7 @@ window.on_show_all_tags_clicked = function ()
 
 window.on_show_no_tags_clicked = function ()
 {
-	$('#tag-toggles input').each(function (idx, checkbox) {
+	$('.tag-toggles input').each(function (idx, checkbox) {
 		$(checkbox).prop('checked', false)
 		$(checkbox).parent().removeClass('active')
 	})
