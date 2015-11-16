@@ -354,40 +354,49 @@
     got_axes = collect_axes(processes);
 
     // TODO: interface to define the trees
-    // NOTE: currently the process should always be the last tag
-    axes = ['supervisor', 'group', 'process'];
+    axes = ['supervisor', 'group'];
 
     function render_box(process, target, axes) {
+      var attr, val, cls;
       if (axes.length) {
-        var attr = axes[0];
-        var val = process[attr] || 'none';
-        var cls = 'attr-' + attr + '-' + val;
-        var box = target.find('.' + cls).first();
-        if (!box.length) {
-          var box = $('#protos .box').clone().addClass(cls);
-          box.find('.attname').text(attr);
-          box.find('.attvalue').text(val);
-          box.data('attvalue', val);
-          // Find the place to insert to keep them in order
-          var cc = target.children();
-          var ins = false;
-          for (var i = 0, ii = (cc.length); i < ii; i++) {
-            var ch = $(cc[i]);
-            if (val < ch.data('attvalue')) {
-              ch.before(box);
-              ins = true;
-              break;
-            }
-          }
-          if (!ins) {
-            target.append(box);
+        attr = axes[0];
+        val = process[attr] || 'none';
+      } else {
+        attr = "process";
+        val = process.supervisor + '-' + process.process;
+      }
+      cls = 'attr-' + attr + '-' + val;
+      var box = target.find('.' + cls).first();
+      if (!box.length) {
+        var box = $('#protos .box').clone().addClass(cls);
+        box.find('.attname').text(attr);
+        box.find('.attvalue').text(val);
+        box.data('attvalue', val);
+        // Find the place to insert to keep them in order
+        var cc = target.children();
+        var ins = false;
+        for (var i = 0, ii = (cc.length); i < ii; i++) {
+          var ch = $(cc[i]);
+          if (val < ch.data('attvalue')) {
+            ch.before(box);
+            ins = true;
+            break;
           }
         }
+        if (!ins) {
+          target.append(box);
+        }
+      }
+      if (axes.length) {
         render_box(process, box.find('.children').first(), axes.slice(1));
       }
       else {
-        target.parent().data('process', process);
+        render_process(process, box);
       }
+    }
+
+    function render_process(process, box) {
+      box.parent().data('process', process);
     }
 
     function collapse_single(box) {
@@ -396,9 +405,12 @@
         var child = children.detach();
         box.replaceWith(children);
         box = children;
+        collapse_single(box);
       }
-      box.children('.children').children('.box').each(
-        function() { collapse_single($(this)); });
+      else {
+        box.children('.children').children('.box').each(
+          function() { collapse_single($(this)); });
+      }
     }
 
     function set_buttons_visibility(box) {
