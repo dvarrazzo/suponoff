@@ -644,3 +644,39 @@ function data2procs(data) {
     }
     return procs;
 }
+
+function Axis (label) {
+	this.label = label
+	this.values = [];
+}
+
+Axis.prototype.add_value = function (value) {
+	if (0 > $.inArray(value, this.values)) {
+		this.values.push(value);
+	}
+}
+
+function collect_axes(procs) {
+	var rv = Object();
+	// Collect the possible attributes we may care. Some we know, some we
+	// get from the tags.
+	rv['supervisor'] = new Axis('supervisor');
+	$(procs).each(function() {
+		rv['supervisor'].add_value(this.supervisor);
+		$(this.tags).each(function() {
+			var tag = this;
+			var c;
+			if ((c = tag.search(':')) == -1) return;
+			var attr = tag.substring(0,c);
+			var val = tag.substring(c+1);
+			if (rv[attr] === undefined)
+				rv[attr] = new Axis(attr);
+			rv[attr].add_value(val);
+		});
+	});
+
+	// Sort values and arrays
+	rv = $.map(rv, function (v) { v.values.sort(); return v; });
+	rv.sort(function (a1, a2) { return a1.label > a2.label; });
+	return rv;
+}
