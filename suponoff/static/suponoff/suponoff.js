@@ -593,26 +593,6 @@ function filter_by_tags()
 }
 
 
-window.on_show_all_tags_clicked = function ()
-{
-	$('.tag-toggles input').each(function (idx, checkbox) {
-		window.console.log(checkbox)
-		$(checkbox).prop('checked', true)
-		$(checkbox).parent().addClass('active')
-	})
-	filter_by_tags()
-}
-
-window.on_show_no_tags_clicked = function ()
-{
-	$('.tag-toggles input').each(function (idx, checkbox) {
-		$(checkbox).prop('checked', false)
-		$(checkbox).parent().removeClass('active')
-	})
-	filter_by_tags()
-}
-
-
 function data2procs(data) {
     var procs = [];
     for (var sname in data.supervisors) {

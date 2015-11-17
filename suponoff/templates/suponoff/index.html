@@ -126,8 +126,8 @@
 	<div class="clearfix" style="clear:both; margin: 10px">
 		Mode: <input id="tag-filter-mode" type="checkbox" data-toggle="toggle"
 		             data-on="AND" data-off="OR">
-		<a href="#" onclick="on_show_all_tags_clicked()">[all]</a>
-		<a href="#" onclick="on_show_no_tags_clicked()">[none]</a>
+		<a id="tag-filter-all" href="#">[all]</a>
+		<a id="tag-filter-none" href="#">[none]</a>
 	</div>
 
 	{% for server, groups in nowhere %}
@@ -364,11 +364,45 @@
 
     axes = [];
 
+    function filter_processes(procsin) {
+      var filters = $('#tags_control input.filter').filter(function () {
+        return $(this).prop('checked');
+      });
+
+      if (!filters.length) {
+        return procsin;
+      }
+
+      var mode_and = (!! $('#tag-filter-mode').prop('checked'));
+      var procsout = [];
+      $(procsin).each(function () {
+        var proc = this;
+        var should_add = mode_and;
+        filters.each(function () {
+          var filter = $(this);
+          pval = proc[filter.data('attr-name')] + '';
+          fval = filter.data('attr-value') + '';
+          if (mode_and) {
+            if (fval != pval) should_add = false;
+          }
+          else {
+            if (fval == pval) should_add = true;
+          }
+        });
+
+        if (should_add) {
+          procsout.push(proc);
+        }
+      });
+
+      return procsout;
+    }
+
     function render_box(process, target, axes) {
       var attr, val, cls;
       if (axes.length) {
         var attr = axes[0];
-        var val = process[attr] || 'none';
+        var val = process[attr] + '';   // the string "undefined" if none
         var cls = 'attr-' + attr + '-' + val;
         var box = target.find('.' + cls).first();
         if (!box.length) {
@@ -429,7 +463,8 @@
       var root = $('#rootbox');
       root.empty();
 
-      $(processes).each(function() {
+      var procs = filter_processes(processes);
+      $(procs).each(function() {
         render_box(this, root, axes);
       });
 
@@ -438,16 +473,20 @@
     }
 
     function render_tags_controls() {
-      got_axes = collect_axes(processes);
+      var got_axes = collect_axes(processes);
       $(got_axes).each(function () {
+        var attrname = this.label;
         var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
-        tr.find('.taggroup-label').text(this.label);
-        tr.find('input').attr('data-attr-name', this.label);
+        tr.find('.taggroup-label').text(attrname);
+        tr.find('input').data('attr-name', attrname);
         $(this.values).each(function () {
+          var attrval = this;
           var btn = $('#protos label.tag').clone()
             .appendTo(tr.find('div.taggroup'));
-          btn.find('span.tag-label').text(this);
-          btn.children('input').attr('data-attr-value', this);
+          btn.find('span.tag-label').text(attrval);
+          btn.children('input')
+            .data('attr-name', attrname)
+            .data('attr-value', attrval);
         });
       });
     }
@@ -460,14 +499,43 @@
         btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
       });
 
-      $('#tags_control').on("change", "input.group", function() {
-        // Why must I negate it?
-        var name = $(this).attr('data-attr-name');
-        if (! $(this).parent('label').hasClass('active')) {
+      $('#tags_control').on("toggle", "input.group", function() {
+        var name = $(this).data('attr-name');
+        if ($(this).prop('checked')) {
           axes.push(name);
         } else {
           axes.splice(axes.indexOf(name), 1);
         }
+        render_boxes(axes);
+      });
+
+      $('#tags_control').on("change", "input.group", function() {
+        var name = $(this).data('attr-name');
+        if ($(this).prop('checked')) {
+          axes.push(name);
+        } else {
+          axes.splice(axes.indexOf(name), 1);
+        }
+        render_boxes(axes);
+      });
+
+      $('#tags_control').on("change", "input.filter", function() {
+        render_boxes(axes);
+      });
+
+      $('#tag-filter-mode').on("change", function() {
+        render_boxes(axes);
+      });
+
+      $('#tag-filter-all').on("click", function() {
+        $('#tags_control input.filter').prop('checked', true);
+        $('#tags_control label.tag').addClass('active');
+        render_boxes(axes);
+      });
+
+      $('#tag-filter-none').on("click", function() {
+        $('#tags_control input.filter').prop('checked', false);
+        $('#tags_control label.tag').removeClass('active');
         render_boxes(axes);
       });
 
