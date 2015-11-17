@@ -642,7 +642,6 @@ function collect_axes(procs) {
 	// get from the tags.
 	rv['supervisor'] = new Axis('supervisor');
 	$(procs).each(function() {
-		rv['supervisor'].add_value(this.supervisor);
 		$(this.tags).each(function() {
 			var tag = this;
 			var c;
@@ -653,6 +652,14 @@ function collect_axes(procs) {
 				rv[attr] = new Axis(attr);
 			rv[attr].add_value(val);
 		});
+	});
+
+	// Collect the values from the attributes found
+	$(procs).each(function() {
+		var proc = this;
+		for (var attr in rv) {
+			rv[attr].add_value(proc[attr] || 'undefined');
+		}
 	});
 
 	// Sort values and arrays
