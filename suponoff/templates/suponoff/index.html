@@ -26,6 +26,10 @@
 		box-shadow: 5px 5px 5px #aaa;
 	}
 
+  div.box h3 {
+    margin-top: 0;
+  }
+
 	.box .bg-success {
 		background: #00FF00;
 	}
@@ -112,35 +116,11 @@
 
   	{% block content %}
 
-	<table>
-	{% for taggroup_label, tags in taggroups %}
-	<tr>
-	<td><div  style="margin: 2px">{{ taggroup_label }}</div></td>
-	<td>
-	<div class="tag-toggles" style="margin: 2px">
-		<div class="taggroup btn-group" data-toggle="buttons">
-			{% for tag in tags %}
-			{% with tag_config=tags_config|get_item:tag %}
-			{% with tag_enabled=tag_config.enabled_by_default %}
-			<label class="btn btn-primary {% if tag_enabled %}active{% endif %}">
-				<input type="checkbox" data-tag="{{tag}}"
-				{% if tag_enabled %}
-				checked
-				{% endif %}
-				>
-				{{tag}}
-			</label>
-			{% endwith %}
-			{% endwith %}
-			{% endfor %}
-		</div>
-	</div>
-	</td>
-	</tr>
-	{% endfor %}
-	</table>
-
   <table id="tags_control">
+    <tr>
+      <th>Groups</th>
+      <th>Filters</th>
+    </tr>
   </table>
 
 	<div class="clearfix" style="clear:both; margin: 10px">
@@ -283,14 +263,11 @@
     <div class="box procgroup">
       <h3><span class="attname"></span>: <span class="attvalue"></span>
         <div style="float: right">
-          <button
-            type="button" class="btn btn-info btn-xs btn-expand"
+          <button type="button" class="btn btn-info btn-xs btn-expand"
             >Expand</button>
-          <button type="button"
-            class="btn btn-success btn-xs btn-startall"
+          <button type="button" class="btn btn-success btn-xs btn-startall"
             >Start All</button>
-          <button
-            type="button" class="btn btn-danger btn-xs btn-stopall"
+          <button type="button" class="btn btn-danger btn-xs btn-stopall"
             >Stop All</button>
         </div>
       </h3>
@@ -300,11 +277,9 @@
     <div class="box process">
       <h3><span class="name"></span>
         <div style="float: right">
-          <button type="button"
-            class="btn btn-success btn-xs btn-start"
+          <button type="button" class="btn btn-success btn-xs btn-start"
             >Start</button>
-          <button
-            type="button" class="btn btn-danger btn-xs btn-stop"
+          <button type="button" class="btn btn-danger btn-xs btn-stop"
             >Stop</button>
         </div>
       </h3>
@@ -315,19 +290,25 @@
 
     <table>
       <tr class="tags_group">
-        <td><div class="label" style="margin: 2px">tags group</div></td>
-        <td class="tags"></td>
+        <td data-toggle="buttons">
+          <label class="btn btn-primary taggroup">
+            <input type="checkbox" class="group"/>
+            <span class="taggroup-label">taggroup</span>
+          </label>
+        </td>
+        <td>
+          <div class="tag-toggles" style="margin: 2px">
+            <div class="taggroup btn-group" data-toggle="buttons">
+            </div>
+          </div>
+        </td>
       </tr>
     </table>
 
-    <div class="tag-toggles" style="margin: 2px">
-      <div class="taggroup btn-group" data-toggle="buttons">
-        <label class="btn btn-primary active">
-          <input type="checkbox" data-tag=tag />
-          <span class="tag">tag</span>
-        </label>
-      </div>
-    </div>
+    <label class="btn btn-primary tag">
+      <input type="checkbox" class="filter" data-tag="tag" />
+      <span class="tag-label">tag</span>
+    </label>
 
     <div class="supervisor" /*id="sup-NAME"*/ /*data-name="NAME" */>
       <h3>Server: <a class="url" href="#"></a>
@@ -459,14 +440,14 @@
     function render_tags_controls() {
       got_axes = collect_axes(processes);
       $(got_axes).each(function () {
-        console.log(this);
         var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
-        tr.find('.label').text(this.label);
+        tr.find('.taggroup-label').text(this.label);
+        tr.find('input').attr('data-attr-name', this.label);
         $(this.values).each(function () {
-          console.log(this);
-          var btn = $('#protos .tags-toggles').clone()
-            .appendTo(tr.find('td.tags'));
-          btn.find('.tag').text(this);
+          var btn = $('#protos label.tag').clone()
+            .appendTo(tr.find('div.taggroup'));
+          btn.find('span.tag-label').text(this);
+          btn.children('input').attr('data-attr-value', this);
         });
       });
     }
@@ -477,6 +458,17 @@
         box.find('.children').first().toggle();
         var btn = box.find('.btn-expand').first();
         btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
+      });
+
+      $('#tags_control').on("change", "input.group", function() {
+        // Why must I negate it?
+        var name = $(this).attr('data-attr-name');
+        if (! $(this).parent('label').hasClass('active')) {
+          axes.push(name);
+        } else {
+          axes.splice(axes.indexOf(name), 1);
+        }
+        render_boxes(axes);
       });
 
       render_tags_controls();
