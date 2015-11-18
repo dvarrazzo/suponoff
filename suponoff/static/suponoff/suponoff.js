@@ -605,6 +605,7 @@ function data2procs(data) {
                 var proc = gdata.processes[pname];
                 proc.supervisor = sname;
                 proc.group = gname;
+                proc.sup_group = sname + '-' + gname;
                 proc.process = pname;
                 proc.tags = $.unique(stags.concat(gtags));
 
