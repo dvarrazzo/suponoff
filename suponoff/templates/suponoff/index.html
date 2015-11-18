@@ -364,6 +364,8 @@
 
     axes = [];
 
+    expanded_boxes = Object();
+
     function filter_processes(procsin) {
       var filters = $('#tags_control input.filter').filter(function () {
         return $(this).prop('checked');
@@ -408,13 +410,9 @@
         if (!box.length) {
           var box = $('#protos .procgroup').clone().addClass(cls);
           box.addClass('attr-' + attr);
-          if (attr != 'sup_group') {
-            box.find('.attname').text(attr);
-            box.find('.attvalue').text(val);
-          } else {
-            box.find('.attname').text('group');
-            box.find('.attvalue').text(process.group);
-          }
+          box.find('.attname').text(attr != 'sup_group' ? attr : "group");
+          box.find('.attvalue').text(attr != 'sup_group' ? val : process.group);
+          box.data('attname', attr);
           box.data('attvalue', val);
           insert_box_inplace(box, target);
         }
@@ -472,6 +470,14 @@
 
       $('.box.attr-sup_group').each(
         function () { collapse_single_groups($(this)); });
+
+      for (var cls in expanded_boxes) {
+        if (!expanded_boxes[cls]) continue;
+        var box = $(cls);
+        if (box.length == 1) {
+          toggle_box_expand(box);
+        }
+      }
     }
 
     function render_tags_controls() {
@@ -493,12 +499,33 @@
       });
     }
 
+    function get_box_path(box) {
+      var cls = '.box.attr-' + box.data('attname') + '-' + box.data('attvalue');
+      var par = box.parents('.box').first();
+      if (par.length) {
+        cls = get_box_path(par) + ' ' + cls;
+      }
+      return cls;
+    }
+
+    function toggle_box_expand(box) {
+      var ch = box.find('.children').first();
+      if (ch.is(':visible')) {
+        ch.hide();
+        box.find('.btn-expand').first().text('Expand');
+        expanded_boxes[get_box_path(box)] = false;
+      }
+      else {
+        ch.show();
+        box.find('.btn-expand').first().text('Collapse');
+        expanded_boxes[get_box_path(box)] = true;
+      }
+    }
+
     $(document).ready(function() {
       $('#rootbox').on("click", ".btn-expand", function() {
-        var box = $(this).parents('.box').first()
-        box.find('.children').first().toggle();
-        var btn = box.find('.btn-expand').first();
-        btn.text(btn.text() == 'Expand' && 'Collapse' || 'Expand');
+        var box = $(this).parents('.box').first();
+        toggle_box_expand(box);
       });
 
       $('#tags_control').on("toggle", "input.group", function() {
