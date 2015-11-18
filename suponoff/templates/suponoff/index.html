@@ -407,8 +407,14 @@
         var box = target.find('.' + cls).first();
         if (!box.length) {
           var box = $('#protos .procgroup').clone().addClass(cls);
-          box.find('.attname').text(attr);
-          box.find('.attvalue').text(val);
+          box.addClass('attr-' + attr);
+          if (attr != 'sup_group') {
+            box.find('.attname').text(attr);
+            box.find('.attvalue').text(val);
+          } else {
+            box.find('.attname').text('group');
+            box.find('.attvalue').text(process.group);
+          }
           box.data('attvalue', val);
           insert_box_inplace(box, target);
         }
@@ -445,21 +451,17 @@
       box.find('.supervisor .value').text(process.supervisor);
     }
 
-    function collapse_single(box) {
+    function collapse_single_groups(box) {
       var children = box.children('.children').children('.box');
       if (children.length == 1) {
         var child = children.detach();
         box.replaceWith(children);
         box = children;
-        collapse_single(box);
-      }
-      else {
-        box.children('.children').children('.box').each(
-          function() { collapse_single($(this)); });
       }
     }
 
     function render_boxes(axes) {
+      axes = axes.concat(['sup_group']);
       var root = $('#rootbox');
       root.empty();
 
@@ -468,8 +470,8 @@
         render_box(this, root, axes);
       });
 
-      root.children('.box').each(
-        function () { collapse_single($(this)); });
+      $('.box.attr-sup_group').each(
+        function () { collapse_single_groups($(this)); });
     }
 
     function render_tags_controls() {
