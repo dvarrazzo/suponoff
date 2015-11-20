@@ -31,18 +31,18 @@
   }
 
   .box .bg-success,
-  .box [data-state=RUNNING] .program-state {
+  .process[data-state=RUNNING] .program-state {
     background: #00FF00;
   }
 
   .box .bg-warning,
-  .process [data-state=STOPPED] .program-state,
-  .process [data-state=EXITED] .program-state {
+  .process[data-state=STOPPED] .program-state,
+  .process[data-state=EXITED] .program-state {
     background: #FFFF00;
   }
   .box .bg-danger,
-  .process [data-state=BACKOFF] .program-state,
-  .process [data-state=FATAL] .program-state {
+  .process[data-state=BACKOFF] .program-state,
+  .process[data-state=FATAL] .program-state {
     background: #FF5930;
   }
 
