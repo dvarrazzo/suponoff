@@ -143,6 +143,7 @@
 
     <div class="box procgroup">
       <h3><span class="attname"></span>: <span class="attvalue"></span>
+      <small class="nprocs-counts">(<span class="nprocs-running">1</span> / <span class="nprocs-total">3</span> running)</small>
         <div style="float: right">
           <button type="button" class="btn btn-info btn-xs btn-expand"
             >Expand</button>
@@ -320,8 +321,10 @@
           box.find('.attvalue').text(attr != 'sup_group' ? val : process.group);
           box.data('attname', attr);
           box.data('attvalue', val);
+          box.data('nprocs', 0);
           insert_box_inplace(box, target);
         }
+        box.data('nprocs', box.data('nprocs') + 1);
         render_box(process, box.find('.children').first(), axes.slice(1));
       } else {
         var box = $('#protos .process').clone();
@@ -349,20 +352,11 @@
 
     function render_process(process, box) {
       var val = process.supervisor + '-' + process.process;
-      box.parent().data('process', process);
+      box.data('process', process);
       box.attr('data-state', process.statename);
       box.find('.name').text(process.process);
       box.data('attvalue', val);
       box.find('.program-state').text(process.statename);
-    }
-
-    function collapse_single_groups(box) {
-      var children = box.children('.children').children('.box');
-      if (children.length == 1) {
-        var child = children.detach();
-        box.replaceWith(children);
-        box = children;
-      }
     }
 
     function render_boxes(axes) {
@@ -375,8 +369,7 @@
         render_box(this, root, axes);
       });
 
-      $('.box.attr-sup_group').each(
-        function () { collapse_single_groups($(this)); });
+      update_counts();
 
       for (var cls in expanded_boxes) {
         if (!expanded_boxes[cls]) continue;
@@ -385,6 +378,35 @@
           toggle_box_expand(box);
         }
       }
+    }
+
+    function update_counts() {
+      // Reset counters
+      $('#rootbox .box').data('nprocs', 0).data('nrunning', 0);
+
+      // Accumulate the counts in the parent boxes
+      $('#rootbox .process').each(function () {
+        var proc = $(this);
+        proc.parents('.box').each(function () {
+          var box = $(this);
+          box.data('nprocs', box.data('nprocs') + 1);
+          if (proc.data('process').statename == 'RUNNING') {
+            box.data('nrunning', box.data('nrunning') + 1);
+          }
+        });
+      });
+
+      // Render the elements in the boxes
+      $('#rootbox .box').each(function () {
+        var box = $(this);
+        if (box.data('nprocs') > 1) {
+          var span = box.find('.nprocs-counts').show();
+          span.find('.nprocs-running').text(box.data('nrunning'));
+          span.find('.nprocs-total').text(box.data('nprocs'));
+        } else {
+          box.find('.nprocs-counts').hide();
+        }
+      });
     }
 
     function render_tags_controls() {
