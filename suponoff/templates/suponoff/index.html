@@ -167,11 +167,12 @@
             >Stop All</button>
         </div>
       </h3>
+      <div class="badges" style="margin-bottom: 6px"></div>
       <div class="children" style="display:none"></div>
     </div>
 
     <div class="process" data-program-name="" data-pid="" >
-      <h5><span class="name"></span>: <span class="program-state"></span></h5>
+      <h4><span class="name"></span>: <span class="program-state"></span></h4>
       <span class="program-description">Running for a while</span>
       <button class="btn btn-xs" onclick="open_stdout(this)">stdout</button>
       <button class="btn btn-xs" onclick="open_stderr(this)">stderr</button>
@@ -288,9 +289,7 @@
     expanded_boxes = Object();
 
     function filter_processes(procsin) {
-      var filters = $('#tags_control input.filter').filter(function () {
-        return $(this).prop('checked');
-      });
+      var filters = $('#tags_control input.filter:checked');
 
       if (!filters.length) {
         return procsin;
@@ -303,13 +302,21 @@
         var should_add = mode_and;
         filters.each(function () {
           var filter = $(this);
-          pval = proc[filter.data('attr-name')] + '';
-          fval = filter.data('attr-value') + '';
-          if (mode_and) {
-            if (fval != pval) should_add = false;
-          }
-          else {
-            if (fval == pval) should_add = true;
+          if (filter.data('attr-name')) {
+            var pval = proc[filter.data('attr-name')] + '';
+            var fval = filter.data('attr-value') + '';
+            if (mode_and) {
+              if (fval != pval) should_add = false;
+            } else {
+              if (fval == pval) should_add = true;
+            }
+          } else {
+            var tag = filter.data('attr-value') + '';
+            if (mode_and) {
+              if (proc.tags.indexOf(tag) == -1) should_add = false;
+            } else {
+              if (proc.tags.indexOf(tag) >= 0) should_add = true;
+            }
           }
         });
 
@@ -336,6 +343,12 @@
           box.data('attname', attr);
           box.data('attvalue', val);
           box.data('nprocs', 0);
+          if (attr == 'sup_group') {
+            for (var i in process.tags) {
+              box.find('.badges').append(
+                '<span class="badge">' + process.tags[i] + '</span> ');
+            }
+          }
           insert_box_inplace(box, target);
         }
         box.data('nprocs', box.data('nprocs') + 1);
@@ -440,7 +453,11 @@
       $(got_axes).each(function () {
         var attrname = this.label;
         var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
-        tr.find('.taggroup-label').text(attrname);
+        if (attrname != '') {
+          tr.find('.taggroup-label').text(attrname);
+        } else {
+          tr.find('.taggroup-label').closest('td').empty();
+        }
         tr.find('input').data('attr-name', attrname);
         $(this.values).each(function () {
           var attrval = this;

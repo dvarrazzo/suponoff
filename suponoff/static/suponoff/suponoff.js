@@ -645,8 +645,7 @@ function collect_axes(procs) {
 	$(procs).each(function() {
 		$(this.tags).each(function() {
 			var tag = this;
-			var c;
-			if ((c = tag.search(':')) == -1) return;
+			var c = tag.search(':');
 			var attr = tag.substring(0,c);
 			var val = tag.substring(c+1);
 			if (rv[attr] === undefined)
@@ -659,7 +658,9 @@ function collect_axes(procs) {
 	$(procs).each(function() {
 		var proc = this;
 		for (var attr in rv) {
-			rv[attr].add_value(proc[attr] || 'undefined');
+			if (rv[attr].label != '') {
+				rv[attr].add_value(proc[attr] || 'undefined');
+			}
 		}
 	});
 
