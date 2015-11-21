@@ -9,8 +9,8 @@ instance. This is done by the script ``sup_broadcast.py``, which is an event
 listener that can be configured in the supervisor itself with a config such::
 
     [eventlistener:sup_broadcast]
-    command=python sup_broadcast.py http://this.sup.host:9001 redis://somewhere:6379
-    events=PROCESS_STATE,TICK_60
+    command=python bin/sup_broadcast.py -c /path/to/supervisor.cfg
+    events = PROCESS_STATE, SUPERVISOR_STATE_CHANGE, TICK_60, PROCESS_GROUP
 
 Optionally, you may run the provided program ``suponoff-monhelper.py``, which
 should listen on the port following supervisor's (usually 9002) and provides
