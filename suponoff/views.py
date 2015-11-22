@@ -23,13 +23,13 @@ LOG = logging.getLogger(__name__)
 
 
 def _get_supervisor(name):
-    url = supcredis.get_url(name)
+    url = supcast.get_url(name)
     supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
     return supervisor
 
 
 def _get_monhelper_url(name):
-    sup_url = supcredis.get_url(name)
+    sup_url = supcast.get_url(name)
     url = urllib.parse.urlparse(sup_url)
     port = url.port
     if port is None:
@@ -119,27 +119,33 @@ def home(request, template_name="suponoff/index.html"):
 
 
 def action(request):
-    server = request.POST['server']
-    supervisor = _get_supervisor(server)
+    supervisor = request.POST['supervisor']
+    supervisor = _get_supervisor(supervisor)
+    program = "{}:{}".format(request.POST['group'], request.POST['process'])
     try:
-        if 'action_start_all' in request.POST:
+        if request.POST['action'] == 'start_all':
             supervisor.supervisor.startAllProcesses()
-            return HttpResponse(json.dumps("ok"), content_type='application/json')
-        elif 'action_stop_all' in request.POST:
+        elif request.POST['action'] == 'stop_all':
             supervisor.supervisor.stopAllProcesses()
-            return HttpResponse(json.dumps("ok"), content_type='application/json')
-        program = "{}:{}".format(request.POST['group'], request.POST['program'])
-        if 'action_start' in request.POST:
+        elif request.POST['action'] == 'start':
             supervisor.supervisor.startProcess(program)
-        elif 'action_stop' in request.POST:
+        elif request.POST['action'] == 'stop':
             supervisor.supervisor.stopProcess(program)
-        elif 'action_restart' in request.POST:
-            supervisor.supervisor.stopProcess(program)
+        elif request.POST['action'] == 'restart':
+            try:
+                supervisor.supervisor.stopProcess(program)
+            except:
+                pass
             supervisor.supervisor.startProcess(program)
-
+    except Exception as e:
+        resp = HttpResponse(str(e), status=400)
+    else:
+        resp = HttpResponse('')
+        resp['Access-Control-Allow-Origin'] = "*"
     finally:
         supervisor("close")()
-    return redirect(settings.SITE_ROOT)
+
+    return resp
 
 
 def get_program_logs(request):
