@@ -2,3 +2,5 @@ Django>=1.7,<1.8
 gunicorn>=19.1,<19.2
 psutil>=3.2,<3.3
 redis>=2.10,<2.11
+flask-socketio>=1.1,<1.2
+eventlet>=0.17,<0.18

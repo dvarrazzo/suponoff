@@ -162,7 +162,7 @@ function update_data_received(data)
 			var group_num_processes_running = 0
 			for (var process_idx in group.processes) {
 				var process = group.processes[process_idx]
-				var process_alert_level = update_process(server_name, group_name, process)
+				var process_alert_level = update_process_ex(server_name, group_name, process)
 				if (process_alert_level > group_alert_level)
 					group_alert_level = process_alert_level
 				if (process.statename == 'RUNNING')
@@ -202,7 +202,7 @@ function get_resource_alert_level(resource_value, resource_limit)
 	return alert_level
 }
 
-function update_process(server_name, group_name, process)
+function update_process_ex(server_name, group_name, process)
 {
 	//console.debug(server_name, group_name, process)
 	var query = _.template('div.server#server-<%= server %> div.group#group-<%= group %> div.program#process-<%= program %>',
@@ -607,6 +607,7 @@ function data2procs(data) {
                 proc.group = gname;
                 proc.sup_group = sname + '-' + gname;
                 proc.process = pname;
+                proc.id = process_id(proc);
                 proc.tags = $.unique(stags.concat(gtags));
 
                 // Convert tags into attributes too
@@ -624,6 +625,11 @@ function data2procs(data) {
         }
     }
     return procs;
+}
+
+function process_id(process) {
+	return 'proc-' + process.supervisor
+		+ '-' + process.group + '-' + process.process;
 }
 
 function Axis (label) {

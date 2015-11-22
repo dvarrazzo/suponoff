@@ -275,6 +275,7 @@
 	<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
 	<script src="//gitcdn.github.io/bootstrap-toggle/2.0.0/js/bootstrap-toggle.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
 
 	<script src="{% static "suponoff/suponoff.js" %}"></script>
 
@@ -378,11 +379,15 @@
     }
 
     function render_process(process, box) {
-      var val = process.supervisor + '-' + process.process;
+      box.attr('id', process.id);
+      box.find('.name').text(process.process);
+      update_process(process, box);
+    }
+
+    function update_process(process, box) {
+      if (!box) { box = $('#' + process.id) }
       box.data('process', process);
       box.attr('data-state', process.statename);
-      box.find('.name').text(process.process);
-      box.data('attvalue', val);
       box.find('.program-state').text(process.statename);
     }
 
@@ -495,6 +500,15 @@
     }
 
     $(document).ready(function() {
+      var socket = io.connect('/ws');
+      socket.on('process', function(data) {
+        var procs = data2procs(data);
+        for (var i in procs) {
+          update_process(procs[i]);
+        }
+        update_counts()
+      });
+
       $('#rootbox').on("click", ".btn-expand", function() {
         var box = $(this).parents('.box').first();
         toggle_box_expand(box);
