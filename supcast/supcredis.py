@@ -1,7 +1,8 @@
 import re
+import json
 import logging
 import urllib.parse
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 import redis
 
@@ -11,21 +12,15 @@ logger = logging.getLogger()
 
 TIMEOUT = 100
 
-class Key:
-    def __init__(self, attr, sup=None, group=None, proc=None):
-        self.attr = attr
-        self.sup = sup
-        self.group = group
-        self.proc = proc
+def key_here(attr=None, group=None, proc=None):
+    cfg = config.get_config()
+    sup = url2name(cfg.url)
+    return Key(attr=attr, sup=sup, group=group, proc=proc)
 
+class Key(namedtuple('Key', 'attr sup group proc')):
     def __str__(self):
         rv = []
-        if self.sup:
-            sup = self.sup
-        else:
-            cfg = config.get_config()
-            sup = url2name(cfg.url)
-        rv.append("sup[%s]" % sup)
+        rv.append("sup[%s]" % self.sup)
 
         if self.group:
             rv.append("group[%s]" % self.group)
@@ -33,8 +28,28 @@ class Key:
         if self.proc:
             rv.append("proc[%s]" % self.proc)
 
-        rv.append('.')
-        rv.append(self.attr)
+        if self.attr:
+            rv.append('.')
+            rv.append(self.attr)
+
+        return ''.join(rv)
+
+    def pattern(self):
+        rv = []
+
+        rv.append("sup\\[%s\\]" % self.sup)
+
+        if self.group:
+            rv.append("group\\[%s\\]" % self.group)
+
+        if self.proc:
+            rv.append("proc\\[%s\\]" % self.proc)
+
+        if self.attr:
+            rv.append('.')
+            rv.append(self.attr)
+        else:
+            rv.append('*')
 
         return ''.join(rv)
 
@@ -57,29 +72,34 @@ class Key:
 
         return cls(**m.groupdict())
 
+Key.__new__.__defaults__ = (None, None, None, None)
+
 
 def register():
     cfg = config.get_config()
-    setex(Key('url'), cfg.url)
+    change(key_here('url'), cfg.url)
 
 def set_process_state(data):
     group = data['group']
     proc = data['name']
-    setex(Key("statename", group=group, proc=proc), data['statename'])
-    if data.get('pid'):
-        setex(Key("pid", group=group, proc=proc), data['pid'])
-    else:
-        delete(Key("pid", group=group, proc=proc))
+    ch = False
+    k = key_here(group=group, proc=proc)
+    ch |= change(k._replace(attr="statename"), data['statename'])
+    ch |= change(k._replace(attr="pid"), data['pid'])
+    if ch:
+        state = json.dumps(get_state(k))
+        logger.debug("broadcasting %s", state)
+        server().publish('process', state)
 
 def remove_group(group):
     r = server()
-    for k in r.scan_iter(r'sup\[[^\]]*\]group\[%s\]*' % group):
+    for k in r.scan_iter(key_here(group=group).pattern()):
         delete(k)
 
 def get_sups():
     r = server()
     servers = []
-    for k in r.scan_iter(r'sup\[[^\]]*\]\.url'):
+    for k in r.scan_iter(Key('url', sup='*').pattern()):
         k = Key.parse(k)
         servers.append(k.sup)
 
@@ -96,17 +116,28 @@ def get_url(sup):
     return rv
 
 def get_all_state():
+    return get_state(Key())
+
+def get_state(kin=None):
     # recursive defaultdict!
     rdict = lambda: defaultdict(rdict)
     rv = rdict()
 
     # Supervisors attributes
     r = server()
-    for rk in r.scan_iter('sup\[*'):
+    for rk in r.scan_iter(r'sup\[*'):
         k = Key.parse(rk)
         v = r.get(rk)
         if v is None: continue
         v = parse_attr(k.attr, v)
+
+        if kin is not None:
+            if kin.sup is not None and k.sup is not None and kin.sup != k.sup:
+                continue
+            if kin.group is not None and k.group is not None and kin.group != k.group:
+                continue
+            if kin.proc is not None and k.proc is not None and kin.proc != k.proc:
+                continue
 
         if k.group is None:
             rv['supervisors'][k.sup][k.attr] = v
@@ -122,6 +153,7 @@ def get_all_state():
         for k, v in d.items() }
     return norec(rv)
 
+
 def parse_attr(attr, v):
     if v is None:
         return None
@@ -135,7 +167,7 @@ def parse_attr(attr, v):
 
 
 def set_group_tags(group, tags):
-    k = str(Key('tags', group=group))
+    k = str(key_here('tags', group=group))
     setex(k, ','.join(tags))
 
 
@@ -146,6 +178,32 @@ def delete(k):
 def setex(k, value):
     logger.debug("storing %s -> %s", k, value)
     server().setex(str(k), TIMEOUT, value)
+
+
+def change(k, val):
+    """Set the k to val, delete if val is None.
+
+    Also set an expire time and return True if the value really changed.
+    """
+    k = str(k)
+    if val is not None:
+        if not isinstance(val, (str, bytes)):
+            val = str(val)
+        if isinstance(val, str):
+            val = val.encode('utf8')
+
+    p = server().pipeline()
+    if val is not None:
+        logger.debug("storing %s -> %s", k, val)
+        p.getset(k, val)
+        p.expire(k, TIMEOUT)
+    else:
+        logger.debug("removing %s", k)
+        p.get(k)
+        p.delete(k)
+
+    oldval = p.execute()[0]
+    return oldval != val
 
 
 _redis = None
