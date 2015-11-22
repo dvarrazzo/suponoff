@@ -223,9 +223,12 @@
 
       <br/>
       <div class="clearfix" style="clear:both;">
-        <button type="button" class="btn btn-xs btn-primary" data-loading-text="Starting..." onclick="on_program_start_clicked(this)">Start</button>
-        <button type="button" class="btn btn-xs btn-primary" data-loading-text="Restarting..." onclick="on_program_restart_clicked(this)">Restart</button>
-        <button type="button" class="btn btn-xs btn-primary" data-loading-text="Stopping..." onclick="on_program_stop_clicked(this)">Stop</button>
+        <button type="button" class="btn btn-xs btn-primary process-action"
+          data-action="start" data-loading-text="Starting...">Start</button>
+        <button type="button" class="btn btn-xs btn-primary process-action"
+          data-action="restart" data-loading-text="Restarting...">Restart</button>
+        <button type="button" class="btn btn-xs btn-primary process-action"
+          data-action="stop" data-loading-text="Stopping...">Stop</button>
       </div>
 
     </div>
@@ -553,6 +556,8 @@
         $('#tags_control label.tag').removeClass('active');
         render_boxes(axes);
       });
+
+      $('#rootbox').on("click", "button.process-action", process_action);
 
       render_tags_controls();
       render_boxes(axes);

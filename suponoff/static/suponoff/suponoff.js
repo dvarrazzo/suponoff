@@ -504,42 +504,25 @@ window.on_group_stop_clicked = function (button)
 	_group_action(button, 'action_stop')
 }
 
-function _program_action(button, action)
-{
-	var server = $(button).parents('div.server').attr('data-server-name')
-	var group = $(button).parents('div.group').attr('data-group-name')
-	var program = $(button).parents('div.program').attr('data-program-name')
-	var data = 	{
-		server: server,
-		program: program,
-		group: group,
-	}
-	data[action] = true
+function process_action() {
+	var button = $(this);
+	var action = button.data('action');
+	var proc = $(button).closest('.process').data('process');
+	var data = {
+		action: action,
+		supervisor: proc.supervisor,
+		group: proc.group,
+		process: proc.process,
+	};
 	$(button).button('loading')
 	$.ajax({
-        url: get_ajax_url('action'),
+        url: '/action',
 		type: 'POST',
 		data: data
-	}).done(function() {
+	}).complete(function() {
 		$(button).button('reset')
 	})
 }
-
-window.on_program_start_clicked = function (button)
-{
-	_program_action(button, 'action_start')
-}
-
-window.on_program_restart_clicked = function (button)
-{
-	_program_action(button, 'action_restart')
-}
-
-window.on_program_stop_clicked = function (button)
-{
-	_program_action(button, 'action_stop')
-}
-
 
 function filter_by_tags()
 {
