@@ -37,6 +37,11 @@
     border: 1px solid #444;
   }
 
+  .box .attvalue,
+  .box .attname {
+    cursor: pointer;
+  }
+
   .box .bg-success,
   .process[data-state=RUNNING] .program-state,
   .box[data-state=RUNNING] > h3 > .attvalue {
@@ -156,14 +161,12 @@
   <div id="protos" style="display:none">
 
     <div class="box procgroup">
-      <h3><span class="attname"></span><span class="attvalue"></span>
+      <h3><span class="attname">: </span><span class="attvalue"></span>
       <small class="nprocs-counts">(<span class="nprocs-running">1</span> / <span class="nprocs-total">3</span> running)</small>
         <div class="buttons">
-          <button type="button" class="btn btn-info btn-xs btn-expand"
-            >Expand</button>
-          <button type="button" class="btn btn-success btn-xs btn-startall"
+          <button type="button" class="btn btn-success btn-xs btn-startall group-action"
             >Start All</button>
-          <button type="button" class="btn btn-danger btn-xs btn-stopall"
+          <button type="button" class="btn btn-danger btn-xs btn-stopall group-action"
             >Stop All</button>
         </div>
       </h3>
@@ -342,16 +345,19 @@
         if (!box.length) {
           var box = $('#protos .procgroup').clone().addClass(cls);
           box.addClass('attr-' + attr);
-          box.find('.attname').text(attr != 'sup_group' ? attr + ": ": "");
-          box.find('.attvalue').text(attr != 'sup_group' ? val : process.group);
           box.data('attname', attr);
           box.data('attvalue', val);
           box.data('nprocs', 0);
           if (attr == 'sup_group') {
+            box.find('.attname').text("");
+            box.find('.attvalue').text(process.group);
             for (var i in process.tags) {
               box.find('.badges').append(
                 '<span class="badge">' + process.tags[i] + '</span> ');
             }
+          } else {
+            box.find('.attname').text(attr);
+            box.find('.attvalue').text(val);
           }
           insert_box_inplace(box, target);
         }
@@ -492,12 +498,10 @@
       var ch = box.find('.children').first();
       if (ch.is(':visible')) {
         ch.hide();
-        box.find('.btn-expand').first().text('Expand');
         expanded_boxes[get_box_path(box)] = false;
       }
       else {
         ch.show();
-        box.find('.btn-expand').first().text('Collapse');
         expanded_boxes[get_box_path(box)] = true;
       }
     }
@@ -512,10 +516,15 @@
         update_counts()
       });
 
-      $('#rootbox').on("click", ".btn-expand", function() {
-        var box = $(this).parents('.box').first();
+      $('#rootbox').on("click", "span.attname", function() {
+        var box = $(this).closest('.box');
         toggle_box_expand(box);
       });
+      $('#rootbox').on("click", "span.attvalue", function() {
+        var box = $(this).closest('.box');
+        toggle_box_expand(box);
+      });
+
 
       $('#tags_control').on("toggle", "input.group", function() {
         var name = $(this).data('attr-name');
