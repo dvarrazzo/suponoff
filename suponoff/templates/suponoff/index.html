@@ -37,8 +37,7 @@
     border: 1px solid #444;
   }
 
-  .box .attvalue,
-  .box .attname {
+  .box .toggle-box {
     cursor: pointer;
   }
 
@@ -161,8 +160,10 @@
   <div id="protos" style="display:none">
 
     <div class="box procgroup">
-      <h3><span class="attname">: </span><span class="attvalue"></span>
-      <small class="nprocs-counts">(<span class="nprocs-running">1</span> / <span class="nprocs-total">3</span> running)</small>
+      <h3><span class="attname toggle-box">:
+        </span><span class="attvalue toggle-box"></span>
+      <small class="nprocs-counts toggle-box">(<span class="nprocs-running">1</span>
+          / <span class="nprocs-total">3</span> running)</small>
         <div class="buttons">
           <button type="button" class="btn btn-success btn-xs btn-startall group-action"
             >Start All</button>
@@ -517,15 +518,10 @@
         update_counts()
       });
 
-      $('#rootbox').on("click", "span.attname", function() {
+      $('#rootbox').on("click", ".toggle-box", function() {
         var box = $(this).closest('.box');
         toggle_box_expand(box);
       });
-      $('#rootbox').on("click", "span.attvalue", function() {
-        var box = $(this).closest('.box');
-        toggle_box_expand(box);
-      });
-
 
       $('#tags_control').on("toggle", "input.group", function() {
         var name = $(this).data('attr-name');
