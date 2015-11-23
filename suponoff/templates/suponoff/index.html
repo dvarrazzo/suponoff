@@ -390,6 +390,7 @@
     function render_process(process, box) {
       box.attr('id', process.id);
       box.find('.name').text(process.process);
+      box.data('attvalue', process.process);    // for sorting
       update_process(process, box);
     }
 
