@@ -119,32 +119,65 @@ def home(request, template_name="suponoff/index.html"):
 
 
 def action(request):
-    supervisor = request.POST['supervisor']
-    supervisor = _get_supervisor(supervisor)
+    sup = request.POST['supervisor']
+    sup = _get_supervisor(sup)
     program = "{}:{}".format(request.POST['group'], request.POST['process'])
+    action = request.POST['action']
     try:
-        if request.POST['action'] == 'start_all':
-            supervisor.supervisor.startAllProcesses()
-        elif request.POST['action'] == 'stop_all':
-            supervisor.supervisor.stopAllProcesses()
-        elif request.POST['action'] == 'start':
-            supervisor.supervisor.startProcess(program)
-        elif request.POST['action'] == 'stop':
-            supervisor.supervisor.stopProcess(program)
-        elif request.POST['action'] == 'restart':
+        if action == 'start':
+            LOG.info("starting %s %s", sup, program)
+            sup.supervisor.startProcess(program)
+        elif action == 'stop':
+            LOG.info("stopping %s %s", sup, program)
+            sup.supervisor.stopProcess(program)
+        elif action == 'restart':
             try:
-                supervisor.supervisor.stopProcess(program)
+                LOG.info("stopping %s %s", sup, program)
+                sup.supervisor.stopProcess(program)
             except:
                 pass
-            supervisor.supervisor.startProcess(program)
+            LOG.info("starting %s %s", sup, program)
+            sup.supervisor.startProcess(program)
+        else:
+            return HttpResponse("bad action: %s" % action, status=400)
     except Exception as e:
+        LOG.error("failed to %s %s: %s", action, program, e)
         resp = HttpResponse(str(e), status=400)
     else:
         resp = HttpResponse('')
         resp['Access-Control-Allow-Origin'] = "*"
     finally:
-        supervisor("close")()
+        sup("close")()
 
+    return resp
+
+
+def group_action(request):
+    procs = json.loads(request.POST['procs'])
+    action = request.POST['action']
+    sups = { s for s, _ in procs }
+    sups = { s: _get_supervisor(s) for s in sups }
+    wait = len(procs) == 1
+    try:
+        for sup, group in procs:
+            sup = sups[sup]
+            try:
+                if action == 'start_all':
+                    LOG.info("starting %s %s wait=%s", sup, group, wait)
+                    sup.supervisor.startProcessGroup(group, wait)
+                elif action == 'stop_all':
+                    LOG.info("stopping %s %s wait=%s", sup, group, wait)
+                    sup.supervisor.stopProcessGroup(group, wait)
+                else:
+                    return HttpResponse("bad action: %s" % action, status=400)
+            except Exception as e:
+                LOG.error("failed to %s %s: %s", action, group, e)
+    finally:
+        for sup in sups.values():
+            sup("close")()
+
+    resp = HttpResponse('')
+    resp['Access-Control-Allow-Origin'] = "*"
     return resp
 
 

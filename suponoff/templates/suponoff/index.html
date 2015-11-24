@@ -159,16 +159,20 @@
 
   <div id="protos" style="display:none">
 
-    <div class="box procgroup">
+    <div class="box">
       <h3><span class="attname toggle-box">:
         </span><span class="attvalue toggle-box"></span>
       <small class="nprocs-counts toggle-box">(<span class="nprocs-running">1</span>
           / <span class="nprocs-total">3</span> running)</small>
         <div class="buttons">
-          <button type="button" class="btn btn-success btn-xs btn-startall group-action"
-            >Start All</button>
-          <button type="button" class="btn btn-danger btn-xs btn-stopall group-action"
-            >Stop All</button>
+          <button type="button"
+            class="btn btn-xs btn-success btn-startall group-action"
+            data-action="start_all" data-loading-text="Starting..."
+            >Start all</button>
+          <button type="button"
+            class="btn btn-xs btn-danger btn-stopall group-action"
+            data-action="stop_all" data-loading-text="Stopping..."
+            >Stop all</button>
         </div>
       </h3>
       <div class="badges" style="margin-bottom: 6px"></div>
@@ -344,12 +348,15 @@
         var cls = 'attr-' + attr + '-' + val;
         var box = target.find('.' + cls).first();
         if (!box.length) {
-          var box = $('#protos .procgroup').clone().addClass(cls);
+          var box = $('#protos .box').clone().addClass(cls);
           box.addClass('attr-' + attr);
           box.data('attname', attr);
           box.data('attvalue', val);
           box.data('nprocs', 0);
           if (attr == 'sup_group') {
+            box.addClass('procgroup')
+              .data('supervisor', process.supervisor)
+              .data('group', process.group);
             box.find('.attname').text("");
             box.find('.attvalue').text(process.group);
             for (var i in process.tags) {
@@ -453,6 +460,8 @@
           span.find('.nprocs-total').text(box.data('nprocs'));
         } else {
           box.find('.nprocs-counts').hide();
+          box.find('.btn-startall').text('Start');
+          box.find('.btn-stopall').text('Stop');
         }
         if (box.data('nrunning') == box.data('nprocs')) {
           box.attr('data-state', 'RUNNING');
@@ -564,6 +573,7 @@
       });
 
       $('#rootbox').on("click", "button.process-action", process_action);
+      $('#rootbox').on("click", "button.group-action", group_action);
 
       render_tags_controls();
       render_boxes(axes);
