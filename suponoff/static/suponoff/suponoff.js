@@ -554,7 +554,6 @@ function process_action() {
 }
 
 function set_group_monitor(box, monitored, state) {
-	console.log(box, monitored, state);
 	if (!box.hasClass('procgroup')) {
 		// Only when you open a group
 		return;
