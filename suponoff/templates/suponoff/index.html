@@ -523,7 +523,9 @@
     }
 
     $(document).ready(function() {
-      var socket = io.connect('/ws');
+      var socket = io.connect(
+        '//' + location.hostname
+        + (location.port ? ':' + location.port : '') + '/ws');
       socket.on('process', function(data) {
         var procs = data2procs(data);
         for (var i in procs) {
