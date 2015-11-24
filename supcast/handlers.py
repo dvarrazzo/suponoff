@@ -18,7 +18,6 @@ def refresh_all():
 	for group, tagslist in tags.get_all().items():
 		supcredis.set_group_tags(group, tagslist)
 
-
 def process_state(headers, data):
 	data = parse_data(data)
 	# state has the same structure of the getProcessInfo XMLRPC structure
@@ -33,6 +32,9 @@ def process_state(headers, data):
 
 def SUPERVISOR_STATE_CHANGE_RUNNING(headers, data):
 	refresh_all()
+
+def SUPERVISOR_STATE_CHANGE_STOPPING(headers, data):
+	logger.info('stopping')
 
 def TICK_60(headers, data):
 	refresh_all()
