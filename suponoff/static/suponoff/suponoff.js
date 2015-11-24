@@ -553,6 +553,29 @@ function process_action() {
 	})
 }
 
+function set_group_monitor(box, monitored, state) {
+	console.log(box, monitored, state);
+	if (!box.hasClass('procgroup')) {
+		// Only when you open a group
+		return;
+	}
+	var procs = box.find('.process');
+	if (state) {
+		procs.each(function () {
+			monitored[$(this).attr('id')] = true;
+		});
+	} else {
+		procs.each(function () {
+			delete monitored[$(this).attr('id')];
+		});
+	}
+	refresh_monitored(monitored);
+}
+
+function refresh_monitored(monitored) {
+	// TODO
+}
+
 function filter_by_tags()
 {
 	var show
