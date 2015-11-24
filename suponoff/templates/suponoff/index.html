@@ -300,6 +300,9 @@
 
     expanded_boxes = Object();
 
+    monitored = Object();
+    setInterval(refresh_monitored, 60 * 1000, monitored);
+
     function filter_processes(procsin) {
       var filters = $('#tags_control input.filter:checked');
 
@@ -510,10 +513,12 @@
       if (ch.is(':visible')) {
         ch.hide();
         expanded_boxes[get_box_path(box)] = false;
+        set_group_monitor(box, monitored, false);
       }
       else {
         ch.show();
         expanded_boxes[get_box_path(box)] = true;
+        set_group_monitor(box, monitored, true);
       }
     }
 
