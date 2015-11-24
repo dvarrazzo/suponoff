@@ -504,6 +504,35 @@ window.on_group_stop_clicked = function (button)
 	_group_action(button, 'action_stop')
 }
 
+function group_action() {
+	var button = $(this);
+	var action = button.data('action');
+	var box = button.closest('.box');
+
+	var groups;
+	if (box.hasClass('procgroup')) {
+		groups = box;
+	} else {
+		groups = box.find('.procgroup');
+	}
+
+	window.groups = groups;
+	var data = {
+		action: action,
+		procs: JSON.stringify($.makeArray(groups.map(function () {
+			return [[$(this).data('supervisor'), $(this).data('group')]]})))
+	};
+
+	$(button).button('loading')
+	$.ajax({
+		url: '/group_action',
+		type: 'POST',
+		data: data
+	}).complete(function() {
+		$(button).button('reset')
+	})
+}
+
 function process_action() {
 	var button = $(this);
 	var action = button.data('action');
@@ -516,7 +545,7 @@ function process_action() {
 	};
 	$(button).button('loading')
 	$.ajax({
-        url: '/action',
+		url: '/action',
 		type: 'POST',
 		data: data
 	}).complete(function() {
