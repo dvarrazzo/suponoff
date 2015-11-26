@@ -133,7 +133,7 @@ def get_state(kin=None):
 	r = server()
 	for rk in r.scan_iter(r'sup\[*'):
 		k = Key.parse(rk)
-		if k.attr not in {'pid', 'statename', 'tags'}:
+		if k.attr not in {'pid', 'statename', 'tags', 'url'}:
 			continue
 		v = r.get(rk)
 		if v is None: continue
