@@ -10,7 +10,7 @@ logger = logging.getLogger()
 def handle(headers, data):
     try:
         handler = globals()[headers['eventname']]
-    except AttributeError:
+    except KeyError:
         logger.error("handler not found: %s", headers['eventname'])
         return
 
@@ -28,16 +28,6 @@ def process_state(headers, data):
         pid=data.get('pid', None))
     supcredis.set_process_state(state)
 
-
-def SUPERVISOR_STATE_CHANGE_RUNNING(headers, data):
-    supcredis.refresh_all()
-
-def SUPERVISOR_STATE_CHANGE_STOPPING(headers, data):
-    logger.info('stopping')
-
-def TICK_60(headers, data):
-    supcredis.refresh_all()
-
 PROCESS_STATE_STARTING  = process_state
 PROCESS_STATE_RUNNING   = process_state
 PROCESS_STATE_BACKOFF   = process_state
@@ -46,6 +36,22 @@ PROCESS_STATE_EXITED    = process_state
 PROCESS_STATE_STOPPED   = process_state
 PROCESS_STATE_FATAL     = process_state
 PROCESS_STATE_UNKNOWN   = process_state
+
+
+def SUPERVISOR_STATE_CHANGE_RUNNING(headers, data):
+    supcredis.refresh_all()
+
+def SUPERVISOR_STATE_CHANGE_STOPPING(headers, data):
+    logger.info('stopping')
+
+
+def TICK_5(headers, data):
+    states = supcredis.get_monitored_state()
+    for state in states:
+        supcredis.publish_procinfo(state)
+
+def TICK_60(headers, data):
+    supcredis.refresh_all()
 
 
 def PROCESS_GROUP_ADDED(headers, data):

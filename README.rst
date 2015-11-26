@@ -9,9 +9,10 @@ instance. This is done by the script ``sup_broadcast.py``, which is an event
 listener that can be configured in the supervisor itself with a config such::
 
     [eventlistener:sup_broadcast]
-    command=python bin/sup_broadcast.py -c /path/to/supervisor.cfg
-    events = PROCESS_STATE, SUPERVISOR_STATE_CHANGE, TICK_60, PROCESS_GROUP,
-        REMOTE_COMMUNICATION
+    command = python bin/sup_broadcast.py -c /path/to/supervisor.cfg
+    events = PROCESS_GROUP, PROCESS_STATE, REMOTE_COMMUNICATION,
+             SUPERVISOR_STATE_CHANGE, TICK_5, TICK_60
+    buffer_size = 8192
 
 Optionally, you may run the provided program ``suponoff-monhelper.py``, which
 should listen on the port following supervisor's (usually 9002) and provides

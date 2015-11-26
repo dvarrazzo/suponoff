@@ -8,6 +8,7 @@ import redis
 from . import rpc
 from . import tags
 from . import config
+from . import procinfo
 
 logger = logging.getLogger()
 
@@ -37,19 +38,11 @@ class Key(namedtuple('Key', 'attr sup group proc')):
     def pattern(self):
         rv = []
 
-        rv.append("sup\\[%s\\]" % self.sup)
-
-        if self.group:
-            rv.append("group\\[%s\\]" % self.group)
-
-        if self.proc:
-            rv.append("proc\\[%s\\]" % self.proc)
-
-        if self.attr:
-            rv.append('.')
-            rv.append(self.attr)
-        else:
-            rv.append('*')
+        # redis seems fine getting sequential *, so won't bother omitting....
+        rv.append("sup\\[%s\\]" % self.sup if self.sup else '*')
+        rv.append("group\\[%s\\]" % self.group if self.group else '*')
+        rv.append("proc\\[%s\\]" % self.proc if self.proc else '*')
+        rv.append(".%s" % self.attr if self.attr else '*')
 
         return ''.join(rv)
 
@@ -89,6 +82,10 @@ def register():
     cfg = config.get_config()
     change(key_here('url'), cfg.url)
 
+def publish(channel, data):
+    logger.debug("publishing %s %s", channel, data)
+    server().publish(channel, data)
+
 def set_process_state(data):
     group = data['group']
     proc = data['name']
@@ -98,8 +95,7 @@ def set_process_state(data):
     ch |= change(k._replace(attr="pid"), data['pid'])
     if ch:
         state = json.dumps(get_state(k))
-        logger.debug("broadcasting %s", state)
-        server().publish('process', state)
+        publish('process', state)
 
 def remove_group(group):
     r = server()
@@ -183,7 +179,28 @@ def set_group_tags(group, tags):
 
 def register_monitor(group, process):
     k = key_here('monitor', group=group, proc=process)
-    setex(k, '1')
+    if change(k, '1'):
+        state = get_state(k)
+        publish_procinfo(state)
+
+def get_monitored_state():
+    p = key_here('monitor').pattern()
+    rv = []
+    for k in server().scan_iter(p):
+        rv.append(get_state(Key.parse(k)))
+
+    return rv
+
+def publish_procinfo(state):
+    for sname, sup in state['supervisors'].items():
+        for gname, group in sup['groups'].items():
+            for pname, proc in group['processes'].items():
+                if proc['statename'] != 'RUNNING' or 'pid' not in proc:
+                    continue
+
+                pinfo = procinfo.get_process_info(proc['pid'])
+                pinfo.update(supervisor=sname, group=gname, process=pname)
+                publish('procinfo', pinfo)
 
 
 def delete(k):
