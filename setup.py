@@ -20,6 +20,7 @@ if __name__ == '__main__':
         scripts=[
             'suponoff-monhelper.py',
             'bin/sup_broadcast.py',
+            'bin/suponoff_ws.py',
         ],
         test_suite='nose.collector',
         tests_require= ['nose'],
