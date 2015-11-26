@@ -5,7 +5,7 @@ Configuration of the events handler
 from six.moves import urllib
 from glob import glob
 from argparse import ArgumentParser
-from six.moves.configparser import ConfigParser
+from six.moves.configparser import ConfigParser, Error
 
 import logging
 
@@ -92,6 +92,11 @@ def parse_config_file(filename):
 
 	cp.redis = cp.get('sup_broadcast', 'redis')
 	cp.url = cp.get('sup_broadcast', 'supervisor_url')
+	try:
+		cp.ident = cp.get('supervisord', 'identifier')
+	except Error:
+		cp.ident = _url2name(cp.url)
+
 	cp.config_file = filename
 
 	return cp
@@ -103,7 +108,7 @@ def reread():
 
 def get_name():
 	cfg = get_config()
-	return _url2name(cfg.url)
+	return cfg.ident
 
 def _url2name(url):
 	url = urllib.parse.urlparse(url)
