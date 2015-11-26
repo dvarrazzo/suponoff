@@ -697,8 +697,9 @@ Axis.prototype.add_value = function (value) {
 
 function collect_axes(procs) {
 	var rv = Object();
-	// Collect the possible attributes from the tags.
+	// Collect the possible attributes we may care. Some we know, some we
 	// get from the tags.
+	rv['supervisor'] = new Axis('supervisor');
 	$.each(procs, function(i, proc) {
 		$.each(proc.tags, function(j, tag) {
 			var c = tag.search(':');
