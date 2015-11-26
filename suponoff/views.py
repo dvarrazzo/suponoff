@@ -8,7 +8,6 @@ from six.moves import urllib
 from six.moves.configparser import ConfigParser
 from six.moves import xmlrpc_client
 
-import concurrent.futures
 from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.shortcuts import redirect, render_to_response
