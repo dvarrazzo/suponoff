@@ -18,7 +18,6 @@ class TestState(unittest.TestCase):
 
     def test_state(self):
         state = supcast.get_all_state()
-        print(state)
         sup = state['supervisors']['localhost-19001']
         self.assertEqual(sup['url'], 'http://localhost:19001')
         self.assertEqual(sorted(sup['tags']), ['foo', 'tag1:a'])

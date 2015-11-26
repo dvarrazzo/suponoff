@@ -2,10 +2,10 @@
 Configuration of the events handler
 """
 
-import urllib.parse
+from six.moves import urllib
 from glob import glob
 from argparse import ArgumentParser
-from configparser import ConfigParser
+from six.moves.configparser import ConfigParser
 
 import logging
 
@@ -45,7 +45,7 @@ def set_redis_url(url):
     opposite as what sup_broadcast does.
     """
     class DummyConf:
-        def items(self):
+        def sections(self):
             return []
 
     conf = DummyConf()

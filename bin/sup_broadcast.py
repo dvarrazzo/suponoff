@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Read events from supervisor and write the supervisor state into redis
 
