@@ -1,22 +1,21 @@
-from . import rpc
 from . import tags
 from . import config
+from . import remote
 from . import supcredis
 
 
 import logging
 logger = logging.getLogger()
 
+def handle(headers, data):
+    try:
+        handler = globals()[headers['eventname']]
+    except AttributeError:
+        logger.error("handler not found: %s", headers['eventname'])
+        return
 
-def refresh_all():
-    supcredis.register()
+    handler(headers, data)
 
-    procs = rpc.get_all_procs_info()
-    for proc in procs:
-        supcredis.set_process_state(proc)
-
-    for group, tagslist in tags.get_all().items():
-        supcredis.set_group_tags(group, tagslist)
 
 def process_state(headers, data):
     data = parse_data(data)
@@ -31,13 +30,13 @@ def process_state(headers, data):
 
 
 def SUPERVISOR_STATE_CHANGE_RUNNING(headers, data):
-    refresh_all()
+    supcredis.refresh_all()
 
 def SUPERVISOR_STATE_CHANGE_STOPPING(headers, data):
     logger.info('stopping')
 
 def TICK_60(headers, data):
-    refresh_all()
+    supcredis.refresh_all()
 
 PROCESS_STATE_STARTING  = process_state
 PROCESS_STATE_RUNNING   = process_state
@@ -63,6 +62,11 @@ def PROCESS_GROUP_REMOVED(headers, data):
     tags.remove(group)
     supcredis.remove_group(group)
 
+
+def REMOTE_COMMUNICATION(headers, data):
+    headers, data = data.split(None, 1)
+    headers = parse_data(headers)
+    remote.handle(headers['type'], data)
 
 
 def parse_data(data):

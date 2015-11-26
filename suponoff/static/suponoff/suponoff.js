@@ -516,7 +516,6 @@ function group_action() {
 		groups = box.find('.procgroup');
 	}
 
-	window.groups = groups;
 	var data = {
 		action: action,
 		procs: JSON.stringify($.makeArray(groups.map(function () {
@@ -558,21 +557,40 @@ function set_group_monitor(box, monitored, state) {
 		// Only when you open a group
 		return;
 	}
+
+	var new_mon = Object();
 	var procs = box.find('.process');
 	if (state) {
 		procs.each(function () {
 			monitored[$(this).attr('id')] = true;
+			new_mon[$(this).attr('id')] = true;
 		});
 	} else {
 		procs.each(function () {
 			delete monitored[$(this).attr('id')];
 		});
 	}
-	refresh_monitored(monitored);
+	refresh_monitored(new_mon);
 }
 
 function refresh_monitored(monitored) {
-	// TODO
+	var procs = $.map(monitored, function (v, k) {
+		var proc = $('#' + k).data('process');
+		if (proc) {
+			return {
+				supervisor: proc.supervisor,
+				group: proc.group,
+				process: proc.process };
+		}
+	});
+
+	if (procs.length == 0) { return; }
+
+	$.ajax({
+		url: '/monitor',
+		type: 'POST',
+		data: { procs: JSON.stringify($.makeArray(procs)) }
+	});
 }
 
 function filter_by_tags()

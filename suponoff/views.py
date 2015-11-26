@@ -153,7 +153,12 @@ def action(request):
 
 
 def group_action(request):
-    procs = json.loads(request.POST['procs'])
+    procs = request.POST.get('procs')
+    try:
+        procs = json.loads(procs)
+    except:
+        return HttpResponse("bad procs: %s" % procs, status=400)
+
     action = request.POST['action']
     sups = { s for s, _ in procs }
     sups = { s: _get_supervisor(s) for s in sups }
@@ -180,6 +185,29 @@ def group_action(request):
     resp['Access-Control-Allow-Origin'] = "*"
     return resp
 
+
+def monitor(request):
+    procs = request.POST.get('procs')
+    try:
+        procs = json.loads(procs)
+        procs = [ dict(
+            supervisor=p['supervisor'], group=p['group'], process=p['process'])
+            for p in procs ]
+    except:
+        return HttpResponse("bad procs: %s" % procs, status=400)
+
+    psups = defaultdict(list)
+    for p in procs:
+        psups[p['supervisor']].append(p)
+
+    for sup, procs in psups.items():
+        sup = _get_supervisor(sup)
+        sup.supervisor.sendRemoteCommEvent('monitor',
+            json.dumps(procs))
+
+    resp = HttpResponse('')
+    resp['Access-Control-Allow-Origin'] = "*"
+    return resp
 
 def get_program_logs(request):
     logs = "Logs for program {}:{} in server {}".format(
