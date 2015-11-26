@@ -18,7 +18,8 @@ if __name__ == '__main__':
         include_package_data=True,
         packages=find_packages(),
         scripts=[
-            'suponoff-monhelper.py'
+            'suponoff-monhelper.py',
+            'bin/sup_broadcast.py',
         ],
         test_suite='nose.collector',
         tests_require= ['nose'],
