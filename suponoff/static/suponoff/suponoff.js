@@ -702,8 +702,8 @@ function collect_axes(procs) {
 	$.each(procs, function(i, proc) {
 		$.each(proc.tags, function(j, tag) {
 			var c = tag.search(':');
-			var attr = tag.substring(0,c);
-			var val = tag.substring(c+1);
+			var attr = $.trim(tag.substring(0,c));
+			var val = $.trim(tag.substring(c+1));
 			if (rv[attr] === undefined)
 				rv[attr] = new Axis(attr);
 			rv[attr].add_value(val);
