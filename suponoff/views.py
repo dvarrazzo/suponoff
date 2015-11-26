@@ -1,19 +1,16 @@
 #!/usr/bin/env python
 import json
 import logging
-import re
 from collections import defaultdict
 from six.moves import urllib
 
-from six.moves.configparser import ConfigParser
 from six.moves import xmlrpc_client
 
 from django.core.context_processors import csrf
 from django.http import HttpResponse
-from django.shortcuts import redirect, render_to_response
+from django.shortcuts import render_to_response
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
-from pathlib import Path
 
 import supcast
 
@@ -240,54 +237,3 @@ def get_program_logs(request):
     else:
         raise AssertionError
     return HttpResponse(logs, content_type='text/plain')
-
-
-class TagConfig:  # pylint: disable=R0903
-    enabled_by_default = True
-    taggroup = 'other'
-
-
-class TagGroup:  # pylint: disable=R0903
-    label = ''
-
-
-def _get_metadata_conf():
-    mappings = []
-    tags_config = defaultdict(TagConfig)
-    taggroups = defaultdict(TagGroup)
-
-    metadata_dir = getattr(settings, "METADATA_DIR", None)
-    if not metadata_dir:
-        return mappings, tags_config, taggroups
-
-    for fname in Path(metadata_dir).iterdir():
-        config = ConfigParser()
-        config.read(str(fname))
-
-        for section in config.sections():
-
-            if section.startswith("meta:"):
-                group_regex = re.compile(config[section].get("group", '.*'))
-                server_regex = re.compile(config[section].get("server", '.*'))
-                tags = config[section].get("tags")
-                if tags is None:
-                    tags = frozenset()
-                else:
-                    tags = {tag.strip() for tag in tags.split(',')}
-                mappings.append((server_regex, group_regex, tags))
-
-            elif section.startswith("tag:"):
-                _, _, tag_name = section.partition("tag:")
-
-                enabled = config[section].getboolean("enabled_by_default", True)
-                tags_config[tag_name].enabled_by_default = enabled
-
-                taggroup = config[section].get("taggroup", 'other')
-                tags_config[tag_name].taggroup = taggroup
-
-            elif section.startswith("taggroup:"):
-                _, _, taggroup_name = section.partition("taggroup:")
-                label = config[section].get("label", '')
-                taggroups[taggroup_name].label = label
-
-    return mappings, tags_config, taggroups
