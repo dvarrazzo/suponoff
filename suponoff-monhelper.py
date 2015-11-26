@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 """
 
 A supervisor-like XML-RPC server that offers an interface to retrieve resource

@@ -21,13 +21,14 @@ def get_all():
 def set_all():
 	group_tags.clear()
 	cfg = config.get_config()
-	for section, conf in cfg.items():
-		if 'tags' not in conf:
-			continue
-		if ':' in section:
-			group_tags[section.rsplit(':')[1]] = parse(conf['tags'])
-		elif section == 'supervisord':
-			group_tags[None] = parse(conf['tags'])
+	for section in cfg.sections():
+		for name, value in cfg.items(section, raw=True):
+			if name != 'tags':
+				continue
+			if ':' in section:
+				group_tags[section.rsplit(':')[1]] = parse(value)
+			elif section == 'supervisord':
+				group_tags[None] = parse(value)
 
 def parse(s):
 	return [ t.strip() for t in s.split(',') ]

@@ -1,12 +1,12 @@
-#!/usr/bin/envpython3
+#!/usr/bin/env python
 import json
 import logging
 import re
-from collections import defaultdict, OrderedDict
-import urllib.parse
+from collections import defaultdict
+from six.moves import urllib
 
-import configparser
-import xmlrpc.client
+from six.moves.configparser import ConfigParser
+from six.moves import xmlrpc_client
 
 import concurrent.futures
 from django.core.context_processors import csrf
@@ -24,7 +24,7 @@ LOG = logging.getLogger(__name__)
 
 def _get_supervisor(name):
     url = supcast.get_url(name)
-    supervisor = xmlrpc.client.ServerProxy(url, verbose=False)
+    supervisor = xmlrpc_client.ServerProxy(url, verbose=False)
     return supervisor
 
 
@@ -42,7 +42,7 @@ def _get_monhelper_url(name):
 def _get_monhelper(name):
     # Assume monhelper is running at port + 1 of supervisor
     url = _get_monhelper_url(name)
-    monhelper = xmlrpc.client.ServerProxy(url, verbose=False)
+    monhelper = xmlrpc_client.ServerProxy(url, verbose=False)
     return monhelper
 
 
@@ -262,7 +262,7 @@ def _get_metadata_conf():
         return mappings, tags_config, taggroups
 
     for fname in Path(metadata_dir).iterdir():
-        config = configparser.ConfigParser()
+        config = ConfigParser()
         config.read(str(fname))
 
         for section in config.sections():
