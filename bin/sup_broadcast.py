@@ -45,13 +45,7 @@ def handle_line(line):
 		logger.debug("data: %s", data) # print the event payload to stderr
 
 		try:
-			handler = getattr(handlers, headers['eventname'])
-		except AttributeError:
-			logger.error("handler not found: %s", headers['eventname'])
-			return
-
-		try:
-			handler(headers, data)
+			handlers.handle(headers, data)
 		except Exception:
 			logger.exception("error handling %s", headers['eventname'])
 

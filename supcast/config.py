@@ -2,6 +2,7 @@
 Configuration of the events handler
 """
 
+import urllib.parse
 from glob import glob
 from argparse import ArgumentParser
 from configparser import ConfigParser
@@ -98,3 +99,15 @@ def parse_config_file(filename):
 def reread():
 	cfg = get_config()
 	set_config(parse_config_file(cfg.config_file))
+
+
+def get_name():
+	cfg = get_config()
+	return _url2name(cfg.url)
+
+def _url2name(url):
+	url = urllib.parse.urlparse(url)
+	if url.port == 9001:
+		return url.hostname
+	else:
+		return '%s-%s' % (url.hostname, url.port)

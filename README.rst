@@ -10,7 +10,8 @@ listener that can be configured in the supervisor itself with a config such::
 
     [eventlistener:sup_broadcast]
     command=python bin/sup_broadcast.py -c /path/to/supervisor.cfg
-    events = PROCESS_STATE, SUPERVISOR_STATE_CHANGE, TICK_60, PROCESS_GROUP
+    events = PROCESS_STATE, SUPERVISOR_STATE_CHANGE, TICK_60, PROCESS_GROUP,
+        REMOTE_COMMUNICATION
 
 Optionally, you may run the provided program ``suponoff-monhelper.py``, which
 should listen on the port following supervisor's (usually 9002) and provides

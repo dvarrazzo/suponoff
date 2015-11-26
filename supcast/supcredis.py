@@ -1,11 +1,12 @@
 import re
 import json
 import logging
-import urllib.parse
 from collections import defaultdict, namedtuple
 
 import redis
 
+from . import rpc
+from . import tags
 from . import config
 
 logger = logging.getLogger()
@@ -13,8 +14,7 @@ logger = logging.getLogger()
 TIMEOUT = 100
 
 def key_here(attr=None, group=None, proc=None):
-	cfg = config.get_config()
-	sup = url2name(cfg.url)
+	sup = config.get_name()
 	return Key(attr=attr, sup=sup, group=group, proc=proc)
 
 class Key(namedtuple('Key', 'attr sup group proc')):
@@ -75,6 +75,16 @@ class Key(namedtuple('Key', 'attr sup group proc')):
 Key.__new__.__defaults__ = (None, None, None, None)
 
 
+def refresh_all():
+	register()
+
+	procs = rpc.get_all_procs_info()
+	for proc in procs:
+		set_process_state(proc)
+
+	for group, tagslist in tags.get_all().items():
+		set_group_tags(group, tagslist)
+
 def register():
 	cfg = config.get_config()
 	change(key_here('url'), cfg.url)
@@ -129,7 +139,7 @@ def get_state(kin=None):
 		k = Key.parse(rk)
 		v = r.get(rk)
 		if v is None: continue
-		v = parse_attr(k.attr, v)
+		v = _parse_attr(k.attr, v)
 
 		if kin is not None:
 			if kin.sup is not None and k.sup is not None and kin.sup != k.sup:
@@ -153,8 +163,7 @@ def get_state(kin=None):
 		for k, v in d.items() }
 	return norec(rv)
 
-
-def parse_attr(attr, v):
+def _parse_attr(attr, v):
 	if v is None:
 		return None
 	v = v.decode('utf8')
@@ -165,10 +174,14 @@ def parse_attr(attr, v):
 	return v
 
 
-
 def set_group_tags(group, tags):
 	k = str(key_here('tags', group=group))
 	setex(k, ','.join(tags))
+
+
+def register_monitor(group, process):
+	k = key_here('monitor', group=group, proc=process)
+	setex(k, '1')
 
 
 def delete(k):
@@ -218,11 +231,3 @@ def server():
 		_redis = redis.StrictRedis(connection_pool=pool)
 
 	return _redis
-
-
-def url2name(url):
-	url = urllib.parse.urlparse(url)
-	if url.port == 9001:
-		return url.hostname
-	else:
-		return '%s-%s' % (url.hostname, url.port)
