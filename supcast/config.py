@@ -61,9 +61,9 @@ def get_group(name):
 
 
 def parse_command_line(args=None):
-    parser = ArgumentParser(description=__doc__)
+    parser = ArgumentParser()
     parser.add_argument('-c', '--config', metavar="FILE",
-        help="supervisor configuration file [default: %(defaults)s]")
+        help="supervisor configuration file [default: %(default)s]")
     parser.add_argument('--verbose', action='store_true',
         help="talk more")
 
