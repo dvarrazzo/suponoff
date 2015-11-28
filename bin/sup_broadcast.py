@@ -28,7 +28,7 @@ def write_stderr(s):
 
 def main():
     config.set_config(config.parse_command_line())
-    supcredis.register()
+    supcredis.refresh_all()
 
     while 1:
         write_stdout('READY\n') # transition from ACKNOWLEDGED to READY
