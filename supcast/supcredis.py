@@ -72,11 +72,13 @@ def refresh_all():
     register()
 
     procs = rpc.get_all_procs_info()
+    groups = set()
     for proc in procs:
         set_process_state(proc)
+        groups.add(proc['group'])
 
-    for group, tagslist in tags.get_all().items():
-        set_group_tags(group, tagslist)
+    for group in groups:
+        set_group_tags(group, tags.get(group))
 
 def register():
     cfg = config.get_config()

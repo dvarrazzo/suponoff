@@ -649,10 +649,8 @@ function data2procs(data) {
     var procs = [];
     for (var sname in data.supervisors) {
         var sdata = data.supervisors[sname];
-        var stags = sdata.tags || [];
         for (var gname in sdata.groups) {
             var gdata = sdata.groups[gname];
-            var gtags = gdata.tags || [];
             for (var pname in gdata.processes) {
                 var proc = gdata.processes[pname];
                 proc.supervisor = sname;
@@ -660,7 +658,7 @@ function data2procs(data) {
                 proc.sup_group = sname + '-' + gname;
                 proc.process = pname;
                 proc.id = process_id(proc);
-                proc.tags = $.unique(stags.concat(gtags));
+                proc.tags = gdata.tags || [];
 
                 // Convert tags into attributes too
                 for (var i in proc.tags) {
