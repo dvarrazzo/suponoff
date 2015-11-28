@@ -94,8 +94,7 @@ def set_process_state(data):
     ch |= change(k._replace(attr="statename"), data['statename'])
     ch |= change(k._replace(attr="pid"), data['pid'])
     if ch:
-        state = json.dumps(get_state(k))
-        publish('process', state)
+        publish_process(k)
 
 def remove_group(group):
     r = server()
@@ -173,8 +172,9 @@ def _parse_attr(attr, v):
 
 
 def set_group_tags(group, tags):
-    k = str(key_here('tags', group=group))
-    setex(k, ','.join(tags))
+    k = key_here('tags', group=group)
+    if change(k, ','.join(tags)):
+        publish_process(k)
 
 
 def register_monitor(group, process):
@@ -190,6 +190,10 @@ def get_monitored_state():
         rv.append(get_state(Key.parse(k)))
 
     return rv
+
+def publish_process(k):
+    state = json.dumps(get_state(k))
+    publish('process', state)
 
 def publish_procinfo(state):
     for sname, sup in state['supervisors'].items():

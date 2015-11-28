@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 from six.moves.configparser import ConfigParser, Error
 
 import logging
+logger = logging.getLogger()
+
 
 _cfg = None
 
@@ -82,6 +84,7 @@ def parse_command_line(args=None):
     return conf
 
 def parse_config_file(filename):
+    logger.debug("reading configuration file: %s", filename)
     cp = ConfigParser()
     with open(filename) as f:
         cp.readfp(f, filename=filename)

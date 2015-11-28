@@ -51,6 +51,7 @@ def TICK_5(headers, data):
         supcredis.publish_procinfo(state)
 
 def TICK_60(headers, data):
+    config.reread()
     supcredis.refresh_all()
 
 
