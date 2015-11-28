@@ -85,7 +85,7 @@ def register():
     change(key_here('url'), cfg.url)
 
 def publish(channel, data):
-    logger.debug("publishing %s %s", channel, data)
+    logger.info("publishing %s %s", channel, data)
     server().publish(channel, data)
 
 def set_process_state(data):

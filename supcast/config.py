@@ -66,8 +66,12 @@ def parse_command_line(args=None):
     parser = ArgumentParser()
     parser.add_argument('-c', '--config', metavar="FILE",
         help="supervisor configuration file [default: %(default)s]")
-    parser.add_argument('--verbose', action='store_true',
-        help="talk more")
+
+    g = parser.add_mutually_exclusive_group()
+    g.add_argument('--quiet', dest='loglevel', action='store_const',
+        default=logging.INFO, const=logging.WARN, help="talk less")
+    g.add_argument('--verbose', dest='loglevel', action='store_const',
+        default=logging.INFO, const=logging.DEBUG, help="talk less")
 
     args = parser.parse_args(args)
     try:
@@ -76,10 +80,7 @@ def parse_command_line(args=None):
         parser.error("error reading config file %s: %s" % (args.config, e))
 
     logger = logging.getLogger()
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    logger.setLevel(args.loglevel)
 
     return conf
 
