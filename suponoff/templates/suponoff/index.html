@@ -465,6 +465,27 @@
       });
     }
 
+    function update_levels() {
+      // Reset counters
+      $('#rootbox .box').data('level', 0);
+
+      // Accumulate the counts in the parent boxes
+      $('#rootbox .process').each(function () {
+        var proc = $(this);
+        proc.parents('.box').each(function () {
+          var box = $(this);
+          box.data('level',
+            Math.max(box.data('level'), proc.data('level') || 0));
+        });
+      });
+
+      // Render the elements in the boxes
+      $('#rootbox .box').each(function () {
+        var box = $(this);
+        box.attr('data-level', box.data('level'));
+      });
+    }
+
     function render_tags_controls() {
       var got_axes = collect_axes(processes);
       $(got_axes).each(function () {
@@ -524,6 +545,7 @@
       })
       .on('procinfo', function(data) {
         update_procinfo(data);
+        update_levels();
       });
 
       $('#rootbox').on("click", ".toggle-box", function() {

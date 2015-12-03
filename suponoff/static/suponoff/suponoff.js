@@ -270,7 +270,7 @@ function update_procinfo(procinfo)
         diskio_div.hide();
     }
 
-    box.attr('data-level', level);
+    box.attr('data-level', level).data('level', level);
 }
 
 function open_stream(button, stream)
