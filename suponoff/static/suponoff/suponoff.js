@@ -5,14 +5,6 @@
 var $ = window.$;
 var _ = window._;
 
-var ALERT_LEVEL_CLASSES = {
-	0: 'bg-success',
-	1: 'bg-info',
-	2: 'bg-warning',
-	3: 'bg-warning',
-	4: 'bg-danger'
-}
-
 var TAG_FILTER_MODE_AND = false;
 var RESOURCE_WARNING_FRACTION = 0.80
 var RESOURCE_ERROR_FRACTION   = 0.95
@@ -97,13 +89,6 @@ $(document).ready(function() {
 
 	$('.tag-toggles input').change(filter_by_tags)
 
-	update().done(function(){
-		//console.log('first update done');
-		$('#page-loading').fadeOut(1000);
-	})
-
-	// setInterval(update, UPDATE_INTERVAL)
-
     $('#tag-filter-mode').change(function() {
       TAG_FILTER_MODE_AND = $(this).prop('checked')
       filter_by_tags()
@@ -123,61 +108,6 @@ function get_ajax_url(action)
 	return url
 }
 
-function update()
-{
-	var resource_programs
-	if (UPDATE_NUMBER % UPDATE_FULL_RESOURCES === 0) {
-		resource_programs = $('div.program')
-	} else {
-		resource_programs = $('div.program:visible')
-	}
-	UPDATE_NUMBER += 1
-	var server_pids = {}
-	resource_programs.each(function(idx, program) {
-		var server = $(program).parents('div.server').attr('data-server-name')
-		var pids = server_pids[server]
-		if (pids === undefined) {
-			pids = []
-			server_pids[server] = pids
-		}
-		pids.push($(program).attr('data-pid'))
-	});
-	// console.log(pids)
-	return $.ajax({
-        url: get_ajax_url('data'),
-		type: 'POST',
-		data: JSON.stringify({server_pids: server_pids})
-	}).done(update_data_received)
-}
-
-function update_data_received(data)
-{
-	//console.log( 'data:', data);
-
-	for (var server_name in data.supervisors) {
-		var server = data.supervisors[server_name]
-		for (var group_name in server.groups) {
-			var group = server.groups[group_name]
-			var group_alert_level = 0
-			var group_num_processes_running = 0
-			for (var process_idx in group.processes) {
-				var process = group.processes[process_idx]
-				var process_alert_level = update_process_ex(server_name, group_name, process)
-				if (process_alert_level > group_alert_level)
-					group_alert_level = process_alert_level
-				if (process.statename == 'RUNNING')
-					group_num_processes_running += 1
-			}
-			var group_div = $(_.template('div.server#server-<%= server %> div.group#group-<%= group %>',
-										 {server: server_name, group: group_name}))
-			group_div.find('>h4>span.group-name').removeClass('bg-success bg-danger bg-info bg-warning').addClass(
-				ALERT_LEVEL_CLASSES[group_alert_level])
-			group_div.find('.num-processes-running').text(group_num_processes_running.toString())
-		}
-	}
-
-}
-
 // http://stackoverflow.com/q/10420352/2211825
 function getReadableFileSizeString(fileSizeInBytes)
 {
@@ -193,191 +123,154 @@ function getReadableFileSizeString(fileSizeInBytes)
 
 function get_resource_alert_level(resource_value, resource_limit)
 {
-	var alert_level = 0
-	var fraction = resource_value / resource_limit
-	if (fraction > RESOURCE_WARNING_FRACTION)
-		alert_level = 2
-	if (fraction > RESOURCE_ERROR_FRACTION)
-		alert_level = 4
-	return alert_level
+    var alert_level = 0;
+    var fraction = resource_value / resource_limit;
+    if (fraction > RESOURCE_WARNING_FRACTION)
+        alert_level = 1;
+    if (fraction > RESOURCE_ERROR_FRACTION)
+        alert_level = 2;
+    return alert_level;
 }
 
-function update_process_ex(server_name, group_name, process)
+function update_procinfo(procinfo)
 {
-	//console.debug(server_name, group_name, process)
-	var query = _.template('div.server#server-<%= server %> div.group#group-<%= group %> div.program#process-<%= program %>',
-						   {server: server_name, group: group_name, program: process.name})
-	var program_div = $(query)
-	//console.debug(program_div)
-	program_div.find('.program-description').text(process.description)
-	program_div.find('.program-state').text(process.statename)
-	program_div.attr('data-pid', process.pid)
+    var box = $('#' + process_id(procinfo));
+    if (!box) { return; }
 
-	var alert_level =
-		{
-			'RUNNING':  0,
-			'STOPPED':  2,
-			'BACKOFF':  4,
-			'STARTING': 1,
-			'STOPPING': 1,
-			'EXITED':   3,
-			'FATAL':    4
-		}[process.statename]
+    var level = 0;
 
-	if ('resources' in process) {
-		// stash a copy of the last known resource levels into the dom element, for later retrieval
-		// they will be used to adjust the alert level for the process; even if we do not have
-		// up-to-date resource levels, we want to make the program and group divs the correct color
-		// based on the last reported levels, otherwise they revert back to green.
-		program_div[0].resources = process.resources
-	}
-	var resources = program_div[0] && program_div[0].resources
-	if (resources !== undefined) {
-		// modify the alert level based on resource levels
-		if ('fileno' in resources && 'max_fileno' in resources)
-			alert_level = Math.max(alert_level, get_resource_alert_level(resources.fileno, resources.max_fileno))
-		if ('vmsize' in resources && 'max_vmsize' in resources)
-			alert_level = Math.max(alert_level, get_resource_alert_level(resources.vmsize, resources.max_vmsize))
-	}
+    // stash a copy of the last known resource levels into the dom element, for later retrieval
+    // they will be used to adjust the alert level for the process; even if we do not have
+    // up-to-date resource levels, we want to make the program and group divs the correct color
+    // based on the last reported levels, otherwise they revert back to green.
+    box.data('procinfo', procinfo);
 
-	if ('resources' in process) {
-		program_div.find('.resources-heading').show()
-		var fileno_div = program_div.find('div.resource.fileno')
-		if ('fileno' in process.resources) {
-			if ('max_fileno' in process.resources) {
-				fileno_div.find('.textual-value').text(_.template('<%= current %> / <%= max %>', {current: process.resources.fileno,
-																								  max: process.resources.max_fileno}))
-				fileno_div.find('.progress-bar').
-					attr('aria-valuenow', process.resources.fileno).
-					attr('aria-valuemax', process.resources.max_fileno).
-					css('width', (process.resources.fileno*100/process.resources.max_fileno) + '%')
-				fileno_div.find('.progress').show()
-			} else {
-				fileno_div.find('.textual-value').text(_.template('<%= current %>', {current: process.resources.fileno}))
-			}
-			fileno_div.find('.textual-value').attr('title', _.template('<%= files %> open files, <%= connections %> sockets', {files: process.resources.numfiles, connections: process.resources.numconnections}))
-			fileno_div.show()
-		} else {
-			fileno_div.hide()
-		}
+    // modify the alert level based on resource levels
+    if ('fileno' in procinfo && 'max_fileno' in procinfo)
+        level = Math.max(level, get_resource_alert_level(
+            procinfo.fileno, procinfo.max_fileno));
+    if ('vmsize' in procinfo && 'max_vmsize' in procinfo)
+        level = Math.max(level, get_resource_alert_level(
+            procinfo.vmsize, procinfo.max_vmsize));
 
-		var vmsize_div = program_div.find('div.resource.vmsize')
-		if ('vmsize' in process.resources) {
-			if ('max_vmsize' in process.resources) {
-				vmsize_div.find('.textual-value').text(_.template('<%= current %> / <%= max %>', {current: getReadableFileSizeString(process.resources.vmsize),
-																								  max: getReadableFileSizeString(process.resources.max_vmsize)}))
-				vmsize_div.find('.progress-bar').
-					attr('aria-valuenow', process.resources.vmsize).
-					attr('aria-valuemax', process.resources.max_vmsize).
-					css('width', (process.resources.vmsize*100/process.resources.max_vmsize) + '%')
-				vmsize_div.find('.progress').show()
-			} else {
-				vmsize_div.find('.textual-value').text(_.template('<%= current %>', {current: getReadableFileSizeString(process.resources.vmsize)}))
-			}
-			vmsize_div.show()
-		} else {
-			vmsize_div.hide()
-		}
+    box.find('.resources-heading').show();
 
-		var numchildren_div = program_div.find('div.resource.numchildren')
-		if ('numchildren' in process.resources && process.resources.numchildren) {
-			numchildren_div.find('.numchildren').text(process.resources.numchildren.toString())
-			numchildren_div.show()
-		} else {
-			numchildren_div.hide()
-		}
+    var fileno_div = box.find('div.resource.fileno');
+    if ('fileno' in procinfo) {
+        if ('max_fileno' in procinfo) {
+            fileno_div.find('.textual-value')
+                .text(procinfo.fileno + " / " + procinfo.max_fileno);
+            fileno_div.find('.progress-bar').
+                attr('aria-valuenow', procinfo.fileno).
+                attr('aria-valuemax', procinfo.max_fileno).
+                css('width', (procinfo.fileno*100/procinfo.max_fileno) + '%');
+            fileno_div.find('.progress').show();
+        } else {
+            fileno_div.find('.textual-value').text(procinfo.fileno);
+        }
+        fileno_div.find('.textual-value').attr('title',
+            procinfo.numfiles + " open files, " +
+            procinfo.numconnections + " sockets")
+        fileno_div.show();
+    } else {
+        fileno_div.hide();
+    }
 
-		var numthreads_div = program_div.find('div.resource.numthreads')
-		if ('numthreads' in process.resources && process.resources.numthreads > 1) {
-			numthreads_div.find('.numthreads').text(process.resources.numthreads.toString())
-			numthreads_div.show()
-		} else {
-			numthreads_div.hide()
-		}
-		var sparkline
-		var last_timestamp
-		var timestamp
-		var new_value
+    var vmsize_div = box.find('div.resource.vmsize');
+    if ('vmsize' in procinfo) {
+        if ('max_vmsize' in procinfo) {
+            vmsize_div.find('.textual-value').text(
+                getReadableFileSizeString(procinfo.vmsize) + " / " +
+                getReadableFileSizeString(procinfo.max_vmsize));
+            vmsize_div.find('.progress-bar').
+                attr('aria-valuenow', procinfo.vmsize).
+                attr('aria-valuemax', procinfo.max_vmsize).
+                css('width', (procinfo.vmsize*100/procinfo.max_vmsize) + '%');
+            vmsize_div.find('.progress').show();
+        } else {
+            vmsize_div.find('.textual-value').text(
+                getReadableFileSizeString(procinfo.vmsize));
+        }
+        vmsize_div.show();
+    } else {
+        vmsize_div.hide();
+    }
 
-		var cpu_div = program_div.find('div.resource.cpu')
-		if ('cpu' in process.resources) {
-			sparkline = cpu_div.find('.sparkline')[0];
-			last_timestamp = sparkline.data_last_timestamp
-			var cpu_values = process.resources.cpu.split(',')
-			timestamp = parseFloat(cpu_values[0])
-			var cpu = parseFloat(cpu_values[1]) + parseFloat(cpu_values[2])
-			if (sparkline.data_last_timestamp !== undefined) {
-				new_value = (cpu - sparkline.data_last_cpu) / (timestamp - sparkline.data_last_timestamp)
-				if (new_value >= 0) {
-					sparkline.data_values.push(Math.round(new_value*100))
-					while (sparkline.data_values.length > 60) {
-						sparkline.data_values.shift()
-					}
-				}
-				$(sparkline).sparkline(sparkline.data_values, {
-					type: 'line',
-					height: '32',
-					lineWidth: 2,
-					chartRangeMin: 0,
-					chartRangeMax: 100,
-					//normalRangeMin: 0,
-					//normalRangeMax: 100,
-					//normalRangeColor: '#ffffff',
-				})
-			} else {
-				sparkline.data_values = [];
-			}
-			sparkline.data_last_cpu = cpu;
-			sparkline.data_last_timestamp = timestamp;
-			cpu_div.show()
-		} else {
-			cpu_div.hide()
-		}
+    var numchildren_div = box.find('div.resource.numchildren');
+    if ('numchildren' in procinfo && procinfo.numchildren) {
+        numchildren_div.show().find('.numchildren').text(procinfo.numchildren);
+    } else {
+        numchildren_div.hide();
+    }
 
-		var diskio_div = program_div.find('div.resource.diskio')
-		if ('diskio' in process.resources) {
-			sparkline = diskio_div.find('.sparkline')[0];
-			last_timestamp = sparkline.data_last_timestamp
-			var diskio_values = process.resources.diskio.split(',')
-			timestamp = parseFloat(diskio_values[0])
-			var diskio = (parseFloat(diskio_values[3]) + parseFloat(diskio_values[4]))/1024
-			if (sparkline.data_last_timestamp !== undefined) {
-				new_value = (diskio - sparkline.data_last_diskio) / (timestamp - sparkline.data_last_timestamp)
-				if (new_value >= 0) {
-					sparkline.data_values.push(Math.round(new_value*100))
-					while (sparkline.data_values.length > 60) {
-						sparkline.data_values.shift()
-					}
-				}
-				$(sparkline).sparkline(sparkline.data_values, {
-					type: 'line',
-					height: '32',
-					lineWidth: 2,
-					//chartRangeMin: 0,
-					//chartRangeMax: 100,
-					//normalRangeMin: 0,
-					//normalRangeMax: 100,
-					//normalRangeColor: '#ffffff',
-				})
-			} else {
-				sparkline.data_values = [];
-			}
-			sparkline.data_last_diskio = diskio;
-			sparkline.data_last_timestamp = timestamp;
-			diskio_div.show()
-		} else {
-			diskio_div.hide()
-		}
+    var numthreads_div = box.find('div.resource.numthreads');
+    if ('numthreads' in procinfo && procinfo.numthreads > 1) {
+        numthreads_div.show().find('.numthreads').text(procinfo.numthreads);
+    } else {
+        numthreads_div.hide();
+    }
 
-	}
-	var state_class = ALERT_LEVEL_CLASSES[alert_level]
-	program_div.find('>h5').removeClass('bg-success bg-danger bg-info bg-warning').addClass(state_class)
+    var sparkline;
+    var timestamp;
+    var new_value;
 
-	if (alert_level > 1) {
-		program_div.parent(".group").show();
-	}
+    var cpu_div = box.find('div.resource.cpu');
+    if ('cpu' in procinfo) {
+        sparkline = cpu_div.find('.sparkline');
+        timestamp = procinfo.cpu[0];
+        var cpu = procinfo.cpu[1] + procinfo.cpu[2];
+        if (sparkline.data('last_timestamp') !== undefined) {
+            new_value = (cpu - sparkline.data('last_cpu'))
+                / (timestamp - sparkline.data('last_timestamp'));
+            if (new_value >= 0) {
+                var values = sparkline.data('values');
+                values.push(Math.round(new_value*100));
+                while (values.length > 60) {
+                    values.shift();
+                }
+            }
+            sparkline.sparkline(sparkline.data('values'), {
+                type: 'line', height: '32', lineWidth: 2,
+                chartRangeMin: 0, chartRangeMax: 100,
+            })
+        } else {
+            sparkline.data('values', []);
+        }
+        sparkline.data('last_cpu', cpu);
+        sparkline.data('last_timestamp', timestamp);
+        cpu_div.show();
+    } else {
+        cpu_div.hide();
+    }
 
-	return alert_level;
+    var diskio_div = box.find('div.resource.diskio')
+    if ('diskio' in procinfo) {
+        sparkline = diskio_div.find('.sparkline');
+        timestamp = procinfo.diskio[0];
+        var diskio = (procinfo.diskio[3] + procinfo.diskio[4]) / 1024;
+        if (sparkline.data('last_timestamp') !== undefined) {
+            new_value = (diskio - sparkline.data('last_diskio'))
+                / (timestamp - sparkline.data('last_timestamp'))
+            if (new_value >= 0) {
+                var values = sparkline.data('values');
+                values.push(Math.round(new_value*100))
+                while (values.length > 60) {
+                    values.shift()
+                }
+            }
+            sparkline.sparkline(sparkline.data('values'), {
+                type: 'line', height: '32', lineWidth: 2 });
+        } else {
+            sparkline.data('values', []);
+        }
+        sparkline.data('last_diskio', diskio);
+        sparkline.data('last_timestamp', timestamp);
+        diskio_div.show();
+    } else {
+        diskio_div.hide();
+    }
+
+    box.attr('data-level', level);
 }
 
 function open_stream(button, stream)
@@ -403,13 +296,7 @@ function open_stream(button, stream)
 		pre.css('height', h + 'px')
 		pre.css('max-height', h + 'px')
 		$('#show-logs-dialog .modal-title').text(
-			_.template('<%= server %>: <%= group %>:<%= program %> <%= stream %>',
-					   {
-						   stream: stream,
-						   program: program,
-						   group: group,
-						   server: server,
-					   }))
+            server + ": " + group + ':' + program + " " + stream);
 
 		$('#show-logs-dialog').modal()
 	})

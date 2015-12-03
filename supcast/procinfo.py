@@ -34,13 +34,13 @@ def get_process_info(pid):
     result["numfiles"] = len(proc.open_files())
 
     if max_vmsize != -1:
-        result["max_vmsize"] = str(max_vmsize)
-    result["vmsize"] = str(proc.memory_info()[1])
+        result["max_vmsize"] = max_vmsize
+    result["vmsize"] = proc.memory_info()[1]
     result["numchildren"] = len(proc.children())
     result["numthreads"] = proc.num_threads()
-    result["cpu"] = ",".join(
-        str(x) for x in [time.time()] + list(proc.cpu_times()))
-    result["diskio"] = ",".join(
 
-        str(x) for x in [time.time()] + list(proc.io_counters()))
+    now = time.time()
+    result["cpu"] = [now] + list(proc.cpu_times())
+    result["diskio"] = [now] + list(proc.io_counters())
+
     return result

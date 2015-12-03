@@ -41,22 +41,28 @@
     cursor: pointer;
   }
 
-  .box .bg-success,
   .process[data-state=RUNNING] .program-state,
   .box[data-state=RUNNING] > h3 > .attvalue {
     background: #00FF00;
   }
-  .box .bg-warning,
   .process[data-state=STOPPED] .program-state,
   .process[data-state=EXITED] .program-state,
   .box[data-state=STOPPED] > h3 > .attvalue {
     background: #FFFF00;
   }
-  .box .bg-danger,
   .process[data-state=BACKOFF] .program-state,
   .process[data-state=FATAL] .program-state,
   .box[data-state=ERRORS] > h3 > .attvalue {
     background: #FF5930;
+  }
+
+  .process[data-level="1"] .program-state,
+  .box[data-level="1"] > h3 > .attvalue {
+    background: #FFFF00 !important;
+  }
+  .process[data-level="2"] .program-state,
+  .box[data-level="2"] > h3 > .attvalue {
+    background: #FF5930 !important;
   }
 
   .box .buttons {
@@ -107,16 +113,6 @@
 		width: 150px;
 		height: 25px !important;
     }
-
-	.server .bg-success {
-		background: #00FF00;
-	}
-	.server .bg-warning {
-		background: #FFFF00;
-	}
-	.server .bg-danger {
-		background: #FF5930;
-	}
 
 	#page-loading {
 		background: url("{% static 'suponoff/ajax-loader.gif'%}") no-repeat scroll center center;
@@ -189,7 +185,6 @@
         <br>
       <h6 class="resources-heading" style="display: none">Resources:</h6>
 
-      {# Open files #}
       <div class="resource fileno" style="display: none">
         File descriptors: <span class="textual-value"></span>
         <br/>
@@ -199,7 +194,6 @@
         </div>
       </div>
 
-      {# VM size #}
       <div class="resource vmsize" style="display: none">
         VM size: <span class="textual-value"></span>
         <br/>
@@ -209,22 +203,18 @@
         </div>
       </div>
 
-      {# numthreds #}
       <div class="resource numthreads" style="display: none">
         Threads: <span class="numthreads">?</span>
       </div>
 
-      {# numchildren #}
       <div class="resource numchildren" style="display: none">
         Child processes: <span class="numchildren">?</span>
       </div>
 
-      {# cpu #}
       <div class="resource cpu" style="display: none; width=100%; height: 32px; line-height: 32px;">
         <div style="display: inline-block; height: 24px; vertical-align: bottom">CPU (%):&nbsp;</div><div style="display: inline-block; height: 32px; vertical-align: bottom" class="sparkline">...</div>
       </div>
 
-      {# Disk IO #}
       <div class="resource diskio" style="display: none; width=100%; height: 32px; line-height: 32px;">
         <div style="display: inline-block; height: 24px; vertical-align: bottom">Disk I/O (kB/s):&nbsp;</div><div style="display: inline-block; height: 32px; vertical-align: bottom" class="sparkline">...</div>
       </div>
@@ -283,7 +273,6 @@
 
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
 	<script src="//gitcdn.github.io/bootstrap-toggle/2.0.0/js/bootstrap-toggle.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
@@ -525,16 +514,16 @@
     $(document).ready(function() {
       var socket = io.connect(
         '//' + location.hostname
-        + (location.port ? ':' + location.port : '') + '/ws');
-      socket.on('process', function(data) {
+        + (location.port ? ':' + location.port : '') + '/ws')
+      .on('process', function(data) {
         var procs = data2procs(data);
         for (var i in procs) {
           update_process(procs[i]);
         }
         update_counts()
-      });
-      socket.on('procinfo', function(data) {
-        console.log("procinfo", data);
+      })
+      .on('procinfo', function(data) {
+        update_procinfo(data);
       });
 
       $('#rootbox').on("click", ".toggle-box", function() {
