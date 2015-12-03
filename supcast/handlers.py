@@ -47,8 +47,7 @@ def SUPERVISOR_STATE_CHANGE_STOPPING(headers, data):
 
 def TICK_5(headers, data):
     states = supcredis.get_monitored_state()
-    for state in states:
-        supcredis.publish_procinfo(state)
+    supcredis.publish_procinfos(states)
 
 def TICK_60(headers, data):
     config.reread()

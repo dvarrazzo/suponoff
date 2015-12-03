@@ -183,7 +183,7 @@ def register_monitor(group, process):
     k = key_here('monitor', group=group, proc=process)
     if change(k, '1'):
         state = get_state(k)
-        publish_procinfo(state)
+        publish_procinfos([state])
 
 def get_monitored_state():
     p = key_here('monitor').pattern()
@@ -197,16 +197,20 @@ def publish_process(k):
     state = json.dumps(get_state(k))
     publish('process', state)
 
-def publish_procinfo(state):
-    for sname, sup in state['supervisors'].items():
-        for gname, group in sup['groups'].items():
-            for pname, proc in group['processes'].items():
-                if proc['statename'] != 'RUNNING' or 'pid' not in proc:
-                    continue
+def publish_procinfos(states):
+    pinfos = []
+    for state in states:
+        for sname, sup in state['supervisors'].items():
+            for gname, group in sup['groups'].items():
+                for pname, proc in group['processes'].items():
+                    if proc['statename'] != 'RUNNING' or 'pid' not in proc:
+                        continue
 
-                pinfo = procinfo.get_process_info(proc['pid'])
-                pinfo.update(supervisor=sname, group=gname, process=pname)
-                publish('procinfo', json.dumps(pinfo))
+                    pinfo = procinfo.get_process_info(proc['pid'])
+                    pinfo.update(supervisor=sname, group=gname, process=pname)
+                    pinfos.append(pinfo)
+    if pinfos:
+        publish('procinfos', json.dumps(pinfos))
 
 
 def delete(k):

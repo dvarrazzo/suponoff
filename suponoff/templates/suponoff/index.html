@@ -543,8 +543,10 @@
         }
         update_counts()
       })
-      .on('procinfo', function(data) {
-        update_procinfo(data);
+      .on('procinfos', function(data) {
+        for (var i in data) {
+          update_procinfo(data[i]);
+        }
         update_levels();
       });
 

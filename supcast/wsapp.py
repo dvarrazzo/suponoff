@@ -20,7 +20,7 @@ logger = logging.getLogger()
 def redis_listener(socketio):
     r = supcast.supcredis.server()
     ps = r.pubsub()
-    ps.subscribe('process', 'procinfo')
+    ps.subscribe('process', 'procinfos')
     for msg in ps.listen():
         if msg['type'] != 'message':
             continue
