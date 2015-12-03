@@ -16,6 +16,7 @@ def get_process_info(pid):
         proc = psutil.Process(pid)
     except:
         logger.exception("Process %s:", pid)
+        return result
 
     result["fileno"] = proc.num_fds()
     try:
