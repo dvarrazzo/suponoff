@@ -533,6 +533,9 @@
         }
         update_counts()
       });
+      socket.on('procinfo', function(data) {
+        console.log("procinfo", data);
+      });
 
       $('#rootbox').on("click", ".toggle-box", function() {
         var box = $(this).closest('.box');

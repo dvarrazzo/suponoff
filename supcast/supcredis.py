@@ -206,7 +206,7 @@ def publish_procinfo(state):
 
                 pinfo = procinfo.get_process_info(proc['pid'])
                 pinfo.update(supervisor=sname, group=gname, process=pname)
-                publish('procinfo', pinfo)
+                publish('procinfo', json.dumps(pinfo))
 
 
 def delete(k):

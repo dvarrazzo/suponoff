@@ -13,19 +13,21 @@ import supcast.config
 import supcast.supcredis
 
 import logging
+logging.basicConfig(loglevel=logging.INFO)
+
 logger = logging.getLogger()
 
 def redis_listener(socketio):
     r = supcast.supcredis.server()
     ps = r.pubsub()
-    ps.subscribe('process')
+    ps.subscribe('process', 'procinfo')
     for msg in ps.listen():
         if msg['type'] != 'message':
             continue
         try:
-            socketio.emit('process',
-                          json.loads(msg['data'].decode('utf8')),
-                          namespace='/ws')
+            socketio.emit(msg['channel'],
+                json.loads(msg['data'].decode('utf8')),
+                namespace='/ws')
         except:
             logger.exception('error sending')
 
