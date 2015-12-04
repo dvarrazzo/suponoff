@@ -61,7 +61,7 @@
             >Stop all</button>
         </div>
       </h3>
-      <div class="badges" style="margin-bottom: 6px"></div>
+      <div class="badges"></div>
       <div class="children"></div>
     </div>
 
@@ -73,42 +73,45 @@
       <button class="btn btn-xs applog" onclick="open_applog(this)"
         title="Opens the application log file." >applog</button>
         <br>
-      <h6 class="resources-heading" style="display: none">Resources:</h6>
+      <div class="resources" style="display: none">
+        <h6 class="resources-heading">Resources:</h6>
 
-      <div class="resource fileno" style="display: none">
-        File descriptors: <span class="textual-value"></span>
-        <br/>
-        <div class="progress" style="margin-bottom: 2px; display: none">
-        <div class="progress-bar" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="">
+        <div class="resource fileno">
+          File descriptors: <span class="textual-value"></span>
+          <br/>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar"
+              aria-valuenow="" aria-valuemin="0" aria-valuemax="">
+          </div>
+          </div>
         </div>
+
+        <div class="resource vmsize">
+          VM size: <span class="textual-value"></span>
+          <br/>
+          <div class="progress">
+            <div class="progress-bar" role="progressbar"
+              aria-valuenow="" aria-valuemin="0" aria-valuemax="">
+            </div>
+          </div>
+        </div>
+
+        <div class="resource numthreads">
+          Threads: <span class="numthreads">?</span>
+        </div>
+
+        <div class="resource numchildren">
+          Child processes: <span class="numchildren">?</span>
+        </div>
+
+        <div class="resource cpu forspark">
+          <div class="sparklabel">CPU (%):&nbsp;</div><div class="sparkline">...</div>
+        </div>
+
+        <div class="resource diskio forspark">
+          <div class="sparklabel">Disk I/O (kB/s):&nbsp;</div><div class="sparkline">...</div>
         </div>
       </div>
-
-      <div class="resource vmsize" style="display: none">
-        VM size: <span class="textual-value"></span>
-        <br/>
-        <div class="progress" style="margin-bottom: 2px; display: none">
-        <div class="progress-bar" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="">
-        </div>
-        </div>
-      </div>
-
-      <div class="resource numthreads" style="display: none">
-        Threads: <span class="numthreads">?</span>
-      </div>
-
-      <div class="resource numchildren" style="display: none">
-        Child processes: <span class="numchildren">?</span>
-      </div>
-
-      <div class="resource cpu" style="display: none; width=100%; height: 32px; line-height: 32px;">
-        <div style="display: inline-block; height: 24px; vertical-align: bottom">CPU (%):&nbsp;</div><div style="display: inline-block; height: 32px; vertical-align: bottom" class="sparkline">...</div>
-      </div>
-
-      <div class="resource diskio" style="display: none; width=100%; height: 32px; line-height: 32px;">
-        <div style="display: inline-block; height: 24px; vertical-align: bottom">Disk I/O (kB/s):&nbsp;</div><div style="display: inline-block; height: 32px; vertical-align: bottom" class="sparkline">...</div>
-      </div>
-
       <br/>
       <div class="clearfix" style="clear:both;">
         <button type="button" class="btn btn-xs btn-primary process-action"

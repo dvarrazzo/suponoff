@@ -108,8 +108,6 @@ function update_procinfo(procinfo)
         level = Math.max(level, get_resource_alert_level(
             procinfo.vmsize, procinfo.max_vmsize));
 
-    box.find('.resources-heading').show();
-
     var fileno_div = box.find('div.resource.fileno');
     if ('fileno' in procinfo) {
         if ('max_fileno' in procinfo) {
@@ -224,6 +222,8 @@ function update_procinfo(procinfo)
     } else {
         diskio_div.hide();
     }
+
+    box.find('.resources').show();
 
     box.attr('data-level', level).data('level', level);
 }
