@@ -321,12 +321,14 @@ function process_action() {
     })
 }
 
-function set_group_monitor(box, monitored, state) {
+function set_group_monitor(box, state) {
     if (!box.hasClass('procgroup')) {
         // Only when you open a group
         return;
     }
 
+    var root = box.closest('.rootbox');
+    var monitored = root.data('monitored');
     var new_mon = Object();
     var procs = box.find('.process');
     if (state) {
@@ -447,13 +449,16 @@ function collect_axes(procs) {
 function set_filtered(procs) {
     var filters = $('#tags_control input.filter:checked');
     if (!filters.length) {
-        $.each(procs, function (i, proc) { proc.filtered = false; });
+        procs.each(function () {
+            var proc = $(this).data('process');
+            proc.filtered = false;
+        });
         return;
     }
 
     var mode_and = (!! $('#tag-filter-mode').prop('checked'));
-    var procsout = [];
-    $.each(procs, function (i, proc) {
+    procs.each(function () {
+        var proc = $(this).data('process');
         var should_add = mode_and;
         filters.each(function () {
             var filter = $(this);
@@ -479,8 +484,8 @@ function set_filtered(procs) {
     });
 }
 
-function render_box(process, target, axes) {
-    var attr, val, cls;
+function render_box(group, target, axes) {
+    var process = group.find('.process').data('process');
     if (axes.length) {
         var attr = axes[0];
         var val = process[attr] + '';       // the string "undefined" if none
@@ -491,30 +496,41 @@ function render_box(process, target, axes) {
             box.addClass('attr-' + attr);
             box.data('attname', attr);
             box.data('attvalue', val);
-            box.data('nprocs', 0);
-            if (attr == 'sup_group') {
-                box.addClass('procgroup')
-                    .data('supervisor', process.supervisor)
-                    .data('group', process.group);
-                box.find('.attname').text("");
-                box.find('.attvalue').text(process.group);
-                for (var i in process.tags) {
-                    box.find('.badges').append(
-                        '<span class="badge">' + process.tags[i] + '</span> ');
-                }
-            } else {
-                box.find('.attname').text(attr);
-                box.find('.attvalue').text(val);
-            }
+            box.find('.attname').text(attr);
+            box.find('.attvalue').text(val);
             insert_box_inplace(box, target);
         }
-        box.data('nprocs', box.data('nprocs') + 1);
-        render_box(process, box.find('.children').first(), axes.slice(1));
+        render_box(group, box.find('.children').first(), axes.slice(1));
     } else {
-        var box = $('#protos .process').clone();
-        render_process(process, box);
+        insert_box_inplace(group.detach(), target);
+    }
+}
+
+function render_group(process, target) {
+    var attr = 'sup_group';
+    var val = process[attr];
+    var cls = 'attr-' + attr + '-' + val;
+    var box = target.find('.' + cls).first();
+    if (!box.length) {
+        var box = $('#protos .box').clone().addClass(cls);
+        box.addClass('attr-' + attr);
+        box.data('attname', attr);
+        box.data('attvalue', val);
+        box.find('.attname').text("");
+        box.find('.attvalue').text(process.group);
+        box.addClass('procgroup')
+            .data('supervisor', process.supervisor)
+            .data('group', process.group);
+        for (var i in process.tags) {
+            box.find('.badges').append(
+                '<span class="badge">' + process.tags[i] + '</span> ');
+        }
         insert_box_inplace(box, target);
     }
+
+    var pbox = $('#protos .process').clone();
+    render_process(process, pbox);
+    insert_box_inplace(pbox, box.find('.children').first());
 }
 
 function insert_box_inplace(box, target) {
@@ -551,35 +567,42 @@ function update_process(process, box) {
     }
 }
 
-function render_boxes(procs, axes, expanded) {
-    axes = axes.concat(['sup_group']);
-    var root = $('#rootbox');
-    root.empty();
+function render_boxes(groups, axes, target) {
+    // Stash the already rendered groups away
+    target.find('.procgroup').removeClass('filtered').appendTo(groups);
+    target.empty();
 
-    set_filtered(procs);
-    $(procs).each(function() {
-        render_box(this, root, axes);
+    set_filtered(groups.find('.process'));
+    groups.find('.procgroup').each(function() {
+        render_box($(this), target, axes);
     });
 
-    update_counts();
+    update_counts(target);
 
+    var expanded = target.data('expanded');
     for (var cls in expanded) {
         if (!expanded[cls]) continue;
         var box = $(cls);
         if (box.length == 1) {
-            toggle_box_expand(box, monitored, expanded);
+            toggle_box_expand(box);
         }
     }
 }
 
-function update_counts() {
+function render_groups(procs, target) {
+    $.each(procs, function(i, proc) {
+        render_group(proc, target);
+    });
+}
+
+function update_counts(target) {
     // Reset counters
-    $('#rootbox .box')
+    target.find('.box')
         .data('nprocs', 0).data('nrunning', 0).data('nerrors', 0)
         .data('nfiltered', 0);
 
     // Accumulate the counts in the parent boxes
-    $('#rootbox .process').each(function () {
+    target.find('.process').each(function () {
         var proc = $(this);
         proc.parents('.box').each(function () {
             var box = $(this);
@@ -598,7 +621,7 @@ function update_counts() {
     });
 
     // Render the elements in the boxes
-    $('#rootbox .box').each(function () {
+    target.find('.box').each(function () {
         var box = $(this);
         if (box.data('nprocs') > 1) {
             var span = box.find('.nprocs-counts').show();
@@ -622,12 +645,12 @@ function update_counts() {
     });
 }
 
-function update_levels() {
+function update_levels(target) {
     // Reset counters
-    $('#rootbox .box').data('level', 0);
+    target.find('.box').data('level', 0);
 
     // Accumulate the counts in the parent boxes
-    $('#rootbox .process').each(function () {
+    target.find('.process').each(function () {
         var proc = $(this);
         proc.parents('.box').each(function () {
             var box = $(this);
@@ -637,7 +660,7 @@ function update_levels() {
     });
 
     // Render the elements in the boxes
-    $('#rootbox .box').each(function () {
+    target.find('.box').each(function () {
         var box = $(this);
         box.attr('data-level', box.data('level'));
     });
@@ -675,8 +698,9 @@ function get_box_path(box) {
     return cls;
 }
 
-function toggle_box_expand(box, monitored, expanded) {
+function toggle_box_expand(box) {
+    var root = box.closest('.rootbox');
     var exp = box.toggleClass('expanded').hasClass('expanded');
-    expanded[get_box_path(box)] = exp;
-    set_group_monitor(box, monitored, exp);
+    root.data('expanded')[get_box_path(box)] = exp;
+    set_group_monitor(box, exp);
 }

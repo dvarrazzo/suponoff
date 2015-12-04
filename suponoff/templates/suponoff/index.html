@@ -41,7 +41,9 @@
 
   {% endblock content %}
 
-  <div id="rootbox"></div>
+  <div id="rootbox" class="rootbox"></div>
+
+  <div id="groups" style="display:none"></div>
 
   <div id="protos" style="display:none">
 
@@ -178,12 +180,20 @@
     var data = {{data|safe}};
     var processes = data2procs(data);
     var axes = [];
-    var expanded_boxes = Object();
 
-    var monitored = Object();
-    setInterval(refresh_monitored, 60 * 1000, monitored);
+    function render_boxes_here() {
+      render_boxes($('#groups'), axes, $('#rootbox'));
+      update_levels($('#rootbox'));
+    }
 
     $(document).ready(function() {
+
+      var root = $('#rootbox');
+      root
+        .data('expanded', Object())
+        .data('monitored', Object());
+      setInterval(refresh_monitored, 60 * 1000, root.data('monitored'));
+
       var socket = io.connect(
         '//' + location.hostname
         + (location.port ? ':' + location.port : '') + '/ws')
@@ -192,18 +202,18 @@
         for (var i in procs) {
           update_process(procs[i]);
         }
-        update_counts()
+        update_counts($('#rootbox'))
       })
       .on('procinfos', function(data) {
         for (var i in data) {
           update_procinfo(data[i]);
         }
-        update_levels();
+        update_levels($('#rootbox'));
       });
 
       $('#rootbox').on("click", ".toggle-box", function() {
         var box = $(this).closest('.box');
-        toggle_box_expand(box, monitored, expanded_boxes);
+        toggle_box_expand(box);
       });
 
       $('#tags_control').on("toggle", "input.group", function() {
@@ -213,7 +223,7 @@
         } else {
           axes.splice(axes.indexOf(name), 1);
         }
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#tags_control').on("change", "input.group", function() {
@@ -223,34 +233,35 @@
         } else {
           axes.splice(axes.indexOf(name), 1);
         }
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#tags_control').on("change", "input.filter", function() {
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#tag-filter-mode').on("change", function() {
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#tag-filter-all').on("click", function() {
         $('#tags_control input.filter').prop('checked', true);
         $('#tags_control label.tag').addClass('active');
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#tag-filter-none').on("click", function() {
         $('#tags_control input.filter').prop('checked', false);
         $('#tags_control label.tag').removeClass('active');
-        render_boxes(processes, axes, expanded_boxes);
+        render_boxes_here();
       });
 
       $('#rootbox').on("click", "button.process-action", process_action);
       $('#rootbox').on("click", "button.group-action", group_action);
 
       render_tags_controls(processes);
-      render_boxes(processes, axes, expanded_boxes);
+      render_groups(processes, $('#groups'));
+      render_boxes_here();
     });
   </script>
 
