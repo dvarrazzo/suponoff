@@ -25,7 +25,7 @@
 
   {% block content %}
 
-  <div id="tags_control">
+  <div id="tags_control" class="tags_control">
     <table class="tags_groups">
       <tr>
         <th>Groups</th>
@@ -219,11 +219,12 @@
       $('#tags_control')
       .data('axes', [])
       .on("change", "input.group", function() {
-        var name = $(this).data('attr-name');
-        if ($(this).prop('checked')) {
-          $('#tags_control').data('axes').push(name);
+        var input = $(this);
+        var name = input.data('attname');
+        if (input.prop('checked')) {
+          input.closest('.tags_control').data('axes').push(name);
         } else {
-          var axes = $('#tags_control').data('axes')
+          var axes = input.closest('.tags_control').data('axes');
           axes.splice(axes.indexOf(name), 1);
         }
         render_boxes_here();

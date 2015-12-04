@@ -462,16 +462,16 @@ function set_filtered(procs, control) {
         var should_add = mode_and;
         filters.each(function () {
             var filter = $(this);
-            if (filter.data('attr-name')) {
-                var pval = proc[filter.data('attr-name')] + '';
-                var fval = filter.data('attr-value') + '';
+            if (filter.data('attname')) {
+                var pval = proc[filter.data('attname')] + '';
+                var fval = filter.data('attvalue') + '';
                 if (mode_and) {
                     if (fval != pval) should_add = false;
                 } else {
                     if (fval == pval) should_add = true;
                 }
             } else {
-                var tag = filter.data('attr-value') + '';
+                var tag = filter.data('attvalue') + '';
                 if (mode_and) {
                     if (proc.tags.indexOf(tag) == -1) should_add = false;
                 } else {
@@ -492,10 +492,11 @@ function render_box(group, target, axes) {
         var cls = 'attr-' + attr + '-' + val;
         var box = target.find('.' + cls).first();
         if (!box.length) {
-            var box = $('#protos .box').clone().addClass(cls);
-            box.addClass('attr-' + attr);
-            box.data('attname', attr);
-            box.data('attvalue', val);
+            var box = $('#protos .box').clone()
+                .addClass(cls)
+                .addClass('attr-' + attr)
+                .data('attname', attr)
+                .data('attvalue', val);
             box.find('.attname').text(attr);
             box.find('.attvalue').text(val);
             insert_box_inplace(box, target);
@@ -512,19 +513,26 @@ function render_group(process, target) {
     var cls = 'attr-' + attr + '-' + val;
     var box = target.find('.' + cls).first();
     if (!box.length) {
-        var box = $('#protos .box').clone().addClass(cls);
-        box.addClass('attr-' + attr);
-        box.data('attname', attr);
-        box.data('attvalue', val);
+        var box = $('#protos .box').clone()
+            .addClass(cls)
+            .addClass('attr-' + attr)
+            .addClass('procgroup')
+            .data('supervisor', process.supervisor)
+            .data('group', process.group)
+            .data('attname', attr)
+            .data('attvalue', val);
         box.find('.attname').text("");
         box.find('.attvalue').text(process.group);
-        box.addClass('procgroup')
-            .data('supervisor', process.supervisor)
-            .data('group', process.group);
-        for (var i in process.tags) {
-            box.find('.badges').append(
-                '<span class="badge">' + process.tags[i] + '</span> ');
-        }
+        var badges = box.find('.badges');
+        $.each(process.tags, function(i, tag) {
+            var badge = badges
+                .append('<span class="badge">' + tag + '</span> ')
+                .find(':last-child');
+            var c = tag.search(':');
+            if (c > -1) {
+                badge.attr('data-attname', tag.substring(0,c));
+            }
+        });
         insert_box_inplace(box, target);
     }
 
@@ -579,6 +587,7 @@ function render_boxes(target, groups, control) {
 
     update_counts(target);
 
+    // Restore the expanded state
     var expanded = target.data('expanded');
     for (var cls in expanded) {
         if (!expanded[cls]) continue;
@@ -587,6 +596,16 @@ function render_boxes(target, groups, control) {
             toggle_box_expand(box);
         }
     }
+
+    // Restore the badges visibility
+    control.find('input.group').each(function () {
+        var badges = target.find(
+            '.badge[data-attname="' + $(this).data('attname') + '"]');
+        if ($(this).prop('checked'))
+            badges.hide();
+        else
+            badges.show();
+    });
 }
 
 function render_groups(procs, target) {
@@ -673,19 +692,20 @@ function render_tags_controls(control, procs) {
         var tr = $('#protos .tags_group').clone()
             .appendTo(control.find('table.tags_groups'));
         if (attrname != '') {
-            tr.find('.taggroup-label').text(attrname);
+            tr.find('.taggroup-label')
+                .text(attrname).data('attname', attrname);
         } else {
             tr.find('.taggroup-label').closest('td').empty();
         }
-        tr.find('input').data('attr-name', attrname);
+        tr.find('input').data('attname', attrname);
         $(this.values).each(function () {
             var attrval = this;
             var btn = $('#protos label.tag').clone()
                 .appendTo(tr.find('div.taggroup'));
             btn.find('span.tag-label').text(attrval);
             btn.children('input')
-                .data('attr-name', attrname)
-                .data('attr-value', attrval);
+                .data('attname', attrname)
+                .data('attvalue', attrval);
         });
     });
 }
