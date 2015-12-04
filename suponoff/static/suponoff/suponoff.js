@@ -2,23 +2,8 @@
 
 'use strict';
 
-var $ = window.$;
-var _ = window._;
-
-var TAG_FILTER_MODE_AND = false;
 var RESOURCE_WARNING_FRACTION = 0.80
 var RESOURCE_ERROR_FRACTION   = 0.95
-
-
-
-var UPDATE_INTERVAL = 5000 // interval between updates, in milliseconds
-// number of updates after which we query full resources, even for hidden programs
-var UPDATE_FULL_RESOURCES = 12
-
-var UPDATE_NUMBER = 0;
-
-
-
 
 // using jQuery
 function getCookie(name) {
@@ -66,36 +51,6 @@ $.ajaxSetup({
     }
 });
 
-
-$(document).ready(function() {
-	$('.group_details_toggle').click(function(){
-		var programs = $(this).parent().parent().find('.program')
-		programs.toggle('fast')
-	})
-
-
-	$('#node-finder').keypress(function(e){
-		if(e.keyCode == 13) {
-			node_finder(e.target.value)
-		}
-	})
-
-	$('#show-logs-dialog').on('shown.bs.modal', function () {
-		var pre = $('#show-logs-dialog div.modal-body pre')
-		var height = pre[0].scrollHeight;
-		pre.scrollTop(height);
-	})
-
-
-	$('.tag-toggles input').change(filter_by_tags)
-
-    $('#tag-filter-mode').change(function() {
-      TAG_FILTER_MODE_AND = $(this).prop('checked')
-      filter_by_tags()
-    })
-
-	filter_by_tags()
-})
 
 function get_ajax_url(action)
 {
@@ -300,8 +255,6 @@ function open_stream(button, stream)
 
 		$('#show-logs-dialog').modal()
 	})
-
-
 }
 
 window.open_stdout = function(button)
@@ -319,77 +272,6 @@ window.open_applog = function (button)
 	return open_stream(button, 'applog');
 }
 
-
-window.on_stopall_clicked = function (button)
-{
-	var server = $(button).parents('div.server').attr('data-server-name')
-	$(button).button('loading')
-	$.ajax({
-        url: get_ajax_url('action'),
-		type: 'POST',
-		data: {
-			server: server,
-			action_stop_all: true,
-		}
-	}).done(function() {
-		$(button).button('reset')
-	})
-}
-
-window.on_startall_clicked = function (button)
-{
-	var server = $(button).parents('div.server').attr('data-server-name')
-	$(button).button('loading')
-	$.ajax({
-        url: get_ajax_url('action'),
-		type: 'POST',
-		data: {
-			csrftoken: csrftoken,
-			server: server,
-			action_start_all: true,
-		}
-	}).done(function() {
-		$(button).button('reset')
-	})
-
-
-}
-
-
-function _group_action(button, action)
-{
-	var server = $(button).parents('div.server').attr('data-server-name')
-	var group = $(button).parents('div.group').attr('data-group-name')
-	var data = 	{
-		server: server,
-		group: group,
-		program: '*',
-	}
-	data[action] = true
-	$(button).button('loading')
-	$.ajax({
-        url: get_ajax_url('action'),
-		type: 'POST',
-		data: data
-	}).done(function() {
-		$(button).button('reset')
-	})
-}
-
-window.on_group_start_clicked = function (button)
-{
-	_group_action(button, 'action_start')
-}
-
-window.on_group_restart_clicked = function (button)
-{
-	_group_action(button, 'action_restart')
-}
-
-window.on_group_stop_clicked = function (button)
-{
-	_group_action(button, 'action_stop')
-}
 
 function group_action() {
 	var button = $(this);
@@ -479,58 +361,6 @@ function refresh_monitored(monitored) {
 		data: { procs: JSON.stringify($.makeArray(procs)) }
 	});
 }
-
-function filter_by_tags()
-{
-	var show
-	var tag
-	var i
-	var enabled_tags = {}
-	$('.tag-toggles > div.taggroup input:checked').each(function (idx, checkbox) {
-		//console.log(checkbox)
-		var tag = $(checkbox).attr('data-tag')
-		enabled_tags[tag] = true
-	})
-	// console.log("Filter mode AND: ", TAG_FILTER_MODE_AND)
-	// console.log(">>> enabled tags: ", enabled_tags)
-	$('div.group').each(function (idx, group_div) {
-		var tags = $(group_div).attr('data-tags').split(' ')
-		if (tags.length === 1 && tags[0].length === 0)
-			tags = []
-
-		if (TAG_FILTER_MODE_AND) {
-			// AND
-			show = true;
-			var have_tags = {}
-			for (i in tags) {
-				have_tags[tags[i]] = true;
-			}
-			// console.log(have_tags)
-			for (tag in enabled_tags) {
-				if (!(tag in have_tags)) {
-					show = false;
-					break
-				}
-			}
-		} else {
-			// OR
-			show = tags.length? false : true;
-			for (i in tags) {
-				if (tags[i] in enabled_tags) {
-					show = true
-					break
-				}
-			}
-		}
-		if (show) {
-			$(group_div).show()
-		} else {
-			$(group_div).hide()
-		}
-	})
-
-}
-
 
 function data2procs(data) {
     var procs = [];
