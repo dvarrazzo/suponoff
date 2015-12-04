@@ -443,17 +443,17 @@ function collect_axes(procs) {
     return rv;
 }
 
-function filter_processes(procsin) {
+/* Set the 'filtered' property on every process of the list */
+function set_filtered(procs) {
     var filters = $('#tags_control input.filter:checked');
-
     if (!filters.length) {
-        return procsin;
+        $.each(procs, function (i, proc) { proc.filtered = false; });
+        return;
     }
 
     var mode_and = (!! $('#tag-filter-mode').prop('checked'));
     var procsout = [];
-    $(procsin).each(function () {
-        var proc = this;
+    $.each(procs, function (i, proc) {
         var should_add = mode_and;
         filters.each(function () {
             var filter = $(this);
@@ -475,12 +475,8 @@ function filter_processes(procsin) {
             }
         });
 
-        if (should_add) {
-            procsout.push(proc);
-        }
+        proc.filtered = !should_add;
     });
-
-    return procsout;
 }
 
 function render_box(process, target, axes) {
@@ -550,6 +546,9 @@ function update_process(process, box) {
     box.data('process', process);
     box.attr('data-state', process.statename);
     box.find('.program-state').text(process.statename);
+    if (process.filtered) {
+        box.addClass('filtered');
+    }
 }
 
 function render_boxes(procs, axes, expanded) {
@@ -557,7 +556,7 @@ function render_boxes(procs, axes, expanded) {
     var root = $('#rootbox');
     root.empty();
 
-    var procs = filter_processes(procs);
+    set_filtered(procs);
     $(procs).each(function() {
         render_box(this, root, axes);
     });
@@ -576,7 +575,8 @@ function render_boxes(procs, axes, expanded) {
 function update_counts() {
     // Reset counters
     $('#rootbox .box')
-        .data('nprocs', 0).data('nrunning', 0).data('nerrors', 0);
+        .data('nprocs', 0).data('nrunning', 0).data('nerrors', 0)
+        .data('nfiltered', 0);
 
     // Accumulate the counts in the parent boxes
     $('#rootbox .process').each(function () {
@@ -584,6 +584,9 @@ function update_counts() {
         proc.parents('.box').each(function () {
             var box = $(this);
             box.data('nprocs', box.data('nprocs') + 1);
+            if (proc.data('process').filtered) {
+                box.data('nfiltered', box.data('nfiltered') + 1);
+            }
             var sname = proc.data('process').statename;
             if (sname == 'RUNNING') {
                 box.data('nrunning', box.data('nrunning') + 1);
@@ -612,6 +615,9 @@ function update_counts() {
             box.attr('data-state', 'ERRORS');
         } else {
             box.attr('data-state', 'STOPPED');
+        }
+        if (box.data('nfiltered') == box.data('nprocs')) {
+            box.addClass('filtered');
         }
     });
 }

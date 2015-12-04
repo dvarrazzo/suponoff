@@ -48,6 +48,18 @@ div.box h3 {
     background: #FF5930 !important;
 }
 
+.process.filtered,
+.box.filtered {
+    display: none;
+}
+
+.process.filtered[data-level="1"],
+.process.filtered[data-level="2"],
+.box.filtered[data-level="1"],
+.box.filtered[data-level="2"] {
+    display: block;
+}
+
 .box .buttons {
     float: right;
     margin-left: 0.2em;
