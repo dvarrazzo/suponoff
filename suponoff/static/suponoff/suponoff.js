@@ -54,13 +54,13 @@ $.ajaxSetup({
 
 function get_ajax_url(action)
 {
-	var url = window.location.href;
-	if (url[url.length - 1] == '#')
-		url = url.slice(0, url.length - 1)
-	if (url[url.length - 1] != '/')
-		url += '/'
-	url += action
-	return url
+    var url = window.location.href;
+    if (url[url.length - 1] == '#')
+        url = url.slice(0, url.length - 1)
+    if (url[url.length - 1] != '/')
+        url += '/'
+    url += action
+    return url
 }
 
 // http://stackoverflow.com/q/10420352/2211825
@@ -230,136 +230,136 @@ function update_procinfo(procinfo)
 
 function open_stream(button, stream)
 {
-	var program_div = $(button).parent('div.program')
-	var program = program_div.attr('data-program-name')
-	var group = program_div.parents('div.group').attr('data-group-name')
-	var server = program_div.parents('div.server').attr('data-server-name')
+    var program_div = $(button).parent('div.program')
+    var program = program_div.attr('data-program-name')
+    var group = program_div.parents('div.group').attr('data-group-name')
+    var server = program_div.parents('div.server').attr('data-server-name')
 
-	$.ajax({
+    $.ajax({
         url: get_ajax_url('data/program-logs'),
-		data: {
-			stream: stream,
-			program: program,
-			pid: program_div.attr('data-pid'),
-			group: group,
-			server: server,
-		}
-	}).done(function(data) {
-		var pre = $('#show-logs-dialog div.modal-body pre')
-		pre.text(data)
-		var h = Math.round($(window).height()*0.7)
-		pre.css('height', h + 'px')
-		pre.css('max-height', h + 'px')
-		$('#show-logs-dialog .modal-title').text(
+        data: {
+            stream: stream,
+            program: program,
+            pid: program_div.attr('data-pid'),
+            group: group,
+            server: server,
+        }
+    }).done(function(data) {
+        var pre = $('#show-logs-dialog div.modal-body pre')
+        pre.text(data)
+        var h = Math.round($(window).height()*0.7)
+        pre.css('height', h + 'px')
+        pre.css('max-height', h + 'px')
+        $('#show-logs-dialog .modal-title').text(
             server + ": " + group + ':' + program + " " + stream);
 
-		$('#show-logs-dialog').modal()
-	})
+        $('#show-logs-dialog').modal()
+    })
 }
 
 window.open_stdout = function(button)
 {
-	return open_stream(button, 'stdout');
+    return open_stream(button, 'stdout');
 }
 
 window. open_stderr = function(button)
 {
-	return open_stream(button, 'stderr');
+    return open_stream(button, 'stderr');
 }
 
 window.open_applog = function (button)
 {
-	return open_stream(button, 'applog');
+    return open_stream(button, 'applog');
 }
 
 
 function group_action() {
-	var button = $(this);
-	var action = button.data('action');
-	var box = button.closest('.box');
+    var button = $(this);
+    var action = button.data('action');
+    var box = button.closest('.box');
 
-	var groups;
-	if (box.hasClass('procgroup')) {
-		groups = box;
-	} else {
-		groups = box.find('.procgroup');
-	}
+    var groups;
+    if (box.hasClass('procgroup')) {
+        groups = box;
+    } else {
+        groups = box.find('.procgroup');
+    }
 
-	var data = {
-		action: action,
-		procs: JSON.stringify($.makeArray(groups.map(function () {
-			return [[$(this).data('supervisor'), $(this).data('group')]]})))
-	};
+    var data = {
+        action: action,
+        procs: JSON.stringify($.makeArray(groups.map(function () {
+            return [[$(this).data('supervisor'), $(this).data('group')]]})))
+    };
 
-	$(button).button('loading')
-	$.ajax({
-		url: '/group_action',
-		type: 'POST',
-		data: data
-	}).complete(function() {
-		$(button).button('reset')
-	})
+    $(button).button('loading')
+    $.ajax({
+        url: '/group_action',
+        type: 'POST',
+        data: data
+    }).complete(function() {
+        $(button).button('reset')
+    })
 }
 
 function process_action() {
-	var button = $(this);
-	var action = button.data('action');
-	var proc = $(button).closest('.process').data('process');
-	var data = {
-		action: action,
-		supervisor: proc.supervisor,
-		group: proc.group,
-		process: proc.process,
-	};
-	$(button).button('loading')
-	$.ajax({
-		url: '/action',
-		type: 'POST',
-		data: data
-	}).complete(function() {
-		$(button).button('reset')
-	})
+    var button = $(this);
+    var action = button.data('action');
+    var proc = $(button).closest('.process').data('process');
+    var data = {
+        action: action,
+        supervisor: proc.supervisor,
+        group: proc.group,
+        process: proc.process,
+    };
+    $(button).button('loading')
+    $.ajax({
+        url: '/action',
+        type: 'POST',
+        data: data
+    }).complete(function() {
+        $(button).button('reset')
+    })
 }
 
 function set_group_monitor(box, monitored, state) {
-	if (!box.hasClass('procgroup')) {
-		// Only when you open a group
-		return;
-	}
+    if (!box.hasClass('procgroup')) {
+        // Only when you open a group
+        return;
+    }
 
-	var new_mon = Object();
-	var procs = box.find('.process');
-	if (state) {
-		procs.each(function () {
-			monitored[$(this).attr('id')] = true;
-			new_mon[$(this).attr('id')] = true;
-		});
-	} else {
-		procs.each(function () {
-			delete monitored[$(this).attr('id')];
-		});
-	}
-	refresh_monitored(new_mon);
+    var new_mon = Object();
+    var procs = box.find('.process');
+    if (state) {
+        procs.each(function () {
+            monitored[$(this).attr('id')] = true;
+            new_mon[$(this).attr('id')] = true;
+        });
+    } else {
+        procs.each(function () {
+            delete monitored[$(this).attr('id')];
+        });
+    }
+    refresh_monitored(new_mon);
 }
 
 function refresh_monitored(monitored) {
-	var procs = $.map(monitored, function (v, k) {
-		var proc = $('#' + k).data('process');
-		if (proc) {
-			return {
-				supervisor: proc.supervisor,
-				group: proc.group,
-				process: proc.process };
-		}
-	});
+    var procs = $.map(monitored, function (v, k) {
+        var proc = $('#' + k).data('process');
+        if (proc) {
+            return {
+                supervisor: proc.supervisor,
+                group: proc.group,
+                process: proc.process };
+        }
+    });
 
-	if (procs.length == 0) { return; }
+    if (procs.length == 0) { return; }
 
-	$.ajax({
-		url: '/monitor',
-		type: 'POST',
-		data: { procs: JSON.stringify($.makeArray(procs)) }
-	});
+    $.ajax({
+        url: '/monitor',
+        type: 'POST',
+        data: { procs: JSON.stringify($.makeArray(procs)) }
+    });
 }
 
 function data2procs(data) {
@@ -398,47 +398,287 @@ function data2procs(data) {
 }
 
 function process_id(process) {
-	return 'proc-' + process.supervisor
-		+ '-' + process.group + '-' + process.process;
+    return 'proc-' + process.supervisor
+        + '-' + process.group + '-' + process.process;
 }
 
 function Axis (label) {
-	this.label = label
-	this.values = [];
+    this.label = label
+    this.values = [];
 }
 
 Axis.prototype.add_value = function (value) {
-	if (0 > $.inArray(value, this.values)) {
-		this.values.push(value);
-	}
+    if (0 > $.inArray(value, this.values)) {
+        this.values.push(value);
+    }
 }
 
 function collect_axes(procs) {
-	var rv = Object();
-	// Collect the possible attributes we may care. Some we know, some we
-	// get from the tags.
-	$.each(procs, function(i, proc) {
-		$.each(proc.tags, function(j, tag) {
-			var c = tag.search(':');
-			var attr = $.trim(tag.substring(0,c));
-			var val = $.trim(tag.substring(c+1));
-			if (rv[attr] === undefined)
-				rv[attr] = new Axis(attr);
-			rv[attr].add_value(val);
-		});
-	});
+    var rv = Object();
+    // Collect the possible attributes we may care. Some we know, some we
+    // get from the tags.
+    $.each(procs, function(i, proc) {
+        $.each(proc.tags, function(j, tag) {
+            var c = tag.search(':');
+            var attr = $.trim(tag.substring(0,c));
+            var val = $.trim(tag.substring(c+1));
+            if (rv[attr] === undefined)
+                rv[attr] = new Axis(attr);
+            rv[attr].add_value(val);
+        });
+    });
 
-	// Collect the values from the attributes found
-	$.each(procs, function(i, proc) {
-		for (var attr in rv) {
-			if (rv[attr].label != '') {
-				rv[attr].add_value(proc[attr] || 'undefined');
-			}
-		}
-	});
+    // Collect the values from the attributes found
+    $.each(procs, function(i, proc) {
+        for (var attr in rv) {
+            if (rv[attr].label != '') {
+                rv[attr].add_value(proc[attr] || 'undefined');
+            }
+        }
+    });
 
-	// Sort values and arrays
-	rv = $.map(rv, function (v) { v.values.sort(); return v; });
-	rv.sort(function (a1, a2) { return a1.label > a2.label; });
-	return rv;
+    // Sort values and arrays
+    rv = $.map(rv, function (v) { v.values.sort(); return v; });
+    rv.sort(function (a1, a2) { return a1.label > a2.label; });
+    return rv;
+}
+
+function filter_processes(procsin) {
+    var filters = $('#tags_control input.filter:checked');
+
+    if (!filters.length) {
+        return procsin;
+    }
+
+    var mode_and = (!! $('#tag-filter-mode').prop('checked'));
+    var procsout = [];
+    $(procsin).each(function () {
+        var proc = this;
+        var should_add = mode_and;
+        filters.each(function () {
+            var filter = $(this);
+            if (filter.data('attr-name')) {
+                var pval = proc[filter.data('attr-name')] + '';
+                var fval = filter.data('attr-value') + '';
+                if (mode_and) {
+                    if (fval != pval) should_add = false;
+                } else {
+                    if (fval == pval) should_add = true;
+                }
+            } else {
+                var tag = filter.data('attr-value') + '';
+                if (mode_and) {
+                    if (proc.tags.indexOf(tag) == -1) should_add = false;
+                } else {
+                    if (proc.tags.indexOf(tag) >= 0) should_add = true;
+                }
+            }
+        });
+
+        if (should_add) {
+            procsout.push(proc);
+        }
+    });
+
+    return procsout;
+}
+
+function render_box(process, target, axes) {
+    var attr, val, cls;
+    if (axes.length) {
+        var attr = axes[0];
+        var val = process[attr] + '';       // the string "undefined" if none
+        var cls = 'attr-' + attr + '-' + val;
+        var box = target.find('.' + cls).first();
+        if (!box.length) {
+            var box = $('#protos .box').clone().addClass(cls);
+            box.addClass('attr-' + attr);
+            box.data('attname', attr);
+            box.data('attvalue', val);
+            box.data('nprocs', 0);
+            if (attr == 'sup_group') {
+                box.addClass('procgroup')
+                    .data('supervisor', process.supervisor)
+                    .data('group', process.group);
+                box.find('.attname').text("");
+                box.find('.attvalue').text(process.group);
+                for (var i in process.tags) {
+                    box.find('.badges').append(
+                        '<span class="badge">' + process.tags[i] + '</span> ');
+                }
+            } else {
+                box.find('.attname').text(attr);
+                box.find('.attvalue').text(val);
+            }
+            insert_box_inplace(box, target);
+        }
+        box.data('nprocs', box.data('nprocs') + 1);
+        render_box(process, box.find('.children').first(), axes.slice(1));
+    } else {
+        var box = $('#protos .process').clone();
+        render_process(process, box);
+        insert_box_inplace(box, target);
+    }
+}
+
+function insert_box_inplace(box, target) {
+    // Find the place to insert to keep them in order
+    var cc = target.children();
+    var ins = false;
+    for (var i = 0, ii = (cc.length); i < ii; i++) {
+        var ch = $(cc[i]);
+        if (box.data('attvalue') < ch.data('attvalue')) {
+            ch.before(box);
+            ins = true;
+            break;
+        }
+    }
+    if (!ins) {
+        target.append(box);
+    }
+}
+
+function render_process(process, box) {
+    box.attr('id', process.id);
+    box.find('.name').text(process.process);
+    box.data('attvalue', process.process);      // for sorting
+    update_process(process, box);
+}
+
+function update_process(process, box) {
+    if (!box) { box = $('#' + process.id) }
+    box.data('process', process);
+    box.attr('data-state', process.statename);
+    box.find('.program-state').text(process.statename);
+}
+
+function render_boxes(procs, axes, expanded) {
+    axes = axes.concat(['sup_group']);
+    var root = $('#rootbox');
+    root.empty();
+
+    var procs = filter_processes(procs);
+    $(procs).each(function() {
+        render_box(this, root, axes);
+    });
+
+    update_counts();
+
+    for (var cls in expanded) {
+        if (!expanded[cls]) continue;
+        var box = $(cls);
+        if (box.length == 1) {
+            toggle_box_expand(box, monitored, expanded);
+        }
+    }
+}
+
+function update_counts() {
+    // Reset counters
+    $('#rootbox .box')
+        .data('nprocs', 0).data('nrunning', 0).data('nerrors', 0);
+
+    // Accumulate the counts in the parent boxes
+    $('#rootbox .process').each(function () {
+        var proc = $(this);
+        proc.parents('.box').each(function () {
+            var box = $(this);
+            box.data('nprocs', box.data('nprocs') + 1);
+            var sname = proc.data('process').statename;
+            if (sname == 'RUNNING') {
+                box.data('nrunning', box.data('nrunning') + 1);
+            }
+            else if (sname == 'BACKOFF' || sname == 'FATAL') {
+                box.data('nerrors', box.data('nerrors') + 1);
+            }
+        });
+    });
+
+    // Render the elements in the boxes
+    $('#rootbox .box').each(function () {
+        var box = $(this);
+        if (box.data('nprocs') > 1) {
+            var span = box.find('.nprocs-counts').show();
+            span.find('.nprocs-running').text(box.data('nrunning'));
+            span.find('.nprocs-total').text(box.data('nprocs'));
+        } else {
+            box.find('.nprocs-counts').hide();
+            box.find('.btn-startall').text('Start');
+            box.find('.btn-stopall').text('Stop');
+        }
+        if (box.data('nrunning') == box.data('nprocs')) {
+            box.attr('data-state', 'RUNNING');
+        } else if (box.data('nerrors') > 0) {
+            box.attr('data-state', 'ERRORS');
+        } else {
+            box.attr('data-state', 'STOPPED');
+        }
+    });
+}
+
+function update_levels() {
+    // Reset counters
+    $('#rootbox .box').data('level', 0);
+
+    // Accumulate the counts in the parent boxes
+    $('#rootbox .process').each(function () {
+        var proc = $(this);
+        proc.parents('.box').each(function () {
+            var box = $(this);
+            box.data('level',
+                Math.max(box.data('level'), proc.data('level') || 0));
+        });
+    });
+
+    // Render the elements in the boxes
+    $('#rootbox .box').each(function () {
+        var box = $(this);
+        box.attr('data-level', box.data('level'));
+    });
+}
+
+function render_tags_controls(procs) {
+    var got_axes = collect_axes(procs);
+    $(got_axes).each(function () {
+        var attrname = this.label;
+        var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
+        if (attrname != '') {
+            tr.find('.taggroup-label').text(attrname);
+        } else {
+            tr.find('.taggroup-label').closest('td').empty();
+        }
+        tr.find('input').data('attr-name', attrname);
+        $(this.values).each(function () {
+            var attrval = this;
+            var btn = $('#protos label.tag').clone()
+                .appendTo(tr.find('div.taggroup'));
+            btn.find('span.tag-label').text(attrval);
+            btn.children('input')
+                .data('attr-name', attrname)
+                .data('attr-value', attrval);
+        });
+    });
+}
+
+function get_box_path(box) {
+    var cls = '.box.attr-' + box.data('attname') + '-' + box.data('attvalue');
+    var par = box.parents('.box').first();
+    if (par.length) {
+        cls = get_box_path(par) + ' ' + cls;
+    }
+    return cls;
+}
+
+function toggle_box_expand(box, monitored, expanded) {
+    var ch = box.find('.children').first();
+    if (ch.is(':visible')) {
+        ch.hide();
+        expanded[get_box_path(box)] = false;
+        set_group_monitor(box, monitored, false);
+    }
+    else {
+        ch.show();
+        expanded[get_box_path(box)] = true;
+        set_group_monitor(box, monitored, true);
+    }
 }
