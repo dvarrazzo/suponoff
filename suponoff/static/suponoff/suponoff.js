@@ -538,6 +538,9 @@ function data2procs(data) {
         var sdata = data.supervisors[sname];
         for (var gname in sdata.groups) {
             var gdata = sdata.groups[gname];
+            gdata.tags = gdata.tags || [];
+            gdata.tags.push('supervisor:' + sname);
+            gdata.tags.sort();
             for (var pname in gdata.processes) {
                 var proc = gdata.processes[pname];
                 proc.supervisor = sname;
@@ -545,7 +548,7 @@ function data2procs(data) {
                 proc.sup_group = sname + '-' + gname;
                 proc.process = pname;
                 proc.id = process_id(proc);
-                proc.tags = gdata.tags || [];
+                proc.tags = gdata.tags;
 
                 // Convert tags into attributes too
                 for (var i in proc.tags) {
@@ -584,7 +587,6 @@ function collect_axes(procs) {
 	var rv = Object();
 	// Collect the possible attributes we may care. Some we know, some we
 	// get from the tags.
-	rv['supervisor'] = new Axis('supervisor');
 	$.each(procs, function(i, proc) {
 		$.each(proc.tags, function(j, tag) {
 			var c = tag.search(':');
