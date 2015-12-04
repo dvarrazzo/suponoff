@@ -446,8 +446,8 @@ function collect_axes(procs) {
 }
 
 /* Set the 'filtered' property on every process of the list */
-function set_filtered(procs) {
-    var filters = $('#tags_control input.filter:checked');
+function set_filtered(procs, control) {
+    var filters = control.find('input.filter:checked');
     if (!filters.length) {
         procs.each(function () {
             var proc = $(this).data('process');
@@ -456,7 +456,7 @@ function set_filtered(procs) {
         return;
     }
 
-    var mode_and = (!! $('#tag-filter-mode').prop('checked'));
+    var mode_and = (!! control.find('.tag-filter-mode').prop('checked'));
     procs.each(function () {
         var proc = $(this).data('process');
         var should_add = mode_and;
@@ -567,14 +567,14 @@ function update_process(process, box) {
     }
 }
 
-function render_boxes(groups, axes, target) {
+function render_boxes(target, groups, control) {
     // Stash the already rendered groups away
     target.find('.procgroup').removeClass('filtered').appendTo(groups);
     target.empty();
 
-    set_filtered(groups.find('.process'));
+    set_filtered(groups.find('.process'), control);
     groups.find('.procgroup').each(function() {
-        render_box($(this), target, axes);
+        render_box($(this), target, control.data('axes'));
     });
 
     update_counts(target);
@@ -666,11 +666,12 @@ function update_levels(target) {
     });
 }
 
-function render_tags_controls(procs) {
+function render_tags_controls(control, procs) {
     var got_axes = collect_axes(procs);
     $(got_axes).each(function () {
         var attrname = this.label;
-        var tr = $('#protos .tags_group').clone().appendTo('#tags_control');
+        var tr = $('#protos .tags_group').clone()
+            .appendTo(control.find('table.tags_groups'));
         if (attrname != '') {
             tr.find('.taggroup-label').text(attrname);
         } else {

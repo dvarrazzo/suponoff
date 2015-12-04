@@ -25,18 +25,20 @@
 
   {% block content %}
 
-  <table id="tags_control">
-    <tr>
-      <th>Groups</th>
-      <th>Filters</th>
-    </tr>
-  </table>
+  <div id="tags_control">
+    <table class="tags_groups">
+      <tr>
+        <th>Groups</th>
+        <th>Filters</th>
+      </tr>
+    </table>
 
-  <div class="clearfix" style="clear:both; margin: 10px">
-    Mode: <input id="tag-filter-mode" type="checkbox" data-toggle="toggle"
-                 data-on="AND" data-off="OR">
-    <a id="tag-filter-all" href="#">[all]</a>
-    <a id="tag-filter-none" href="#">[none]</a>
+    <div class="clearfix" style="clear:both; margin: 10px">
+      Mode: <input class="tag-filter-mode" type="checkbox" data-toggle="toggle"
+                   data-on="AND" data-off="OR">
+      <a class="tag-filter-all" href="#">[all]</a>
+      <a class="tag-filter-none" href="#">[none]</a>
+    </div>
   </div>
 
   {% endblock content %}
@@ -177,22 +179,7 @@
     {% endblock body %}
 
   <script>
-    var data = {{data|safe}};
-    var processes = data2procs(data);
-    var axes = [];
-
-    function render_boxes_here() {
-      render_boxes($('#groups'), axes, $('#rootbox'));
-      update_levels($('#rootbox'));
-    }
-
     $(document).ready(function() {
-
-      var root = $('#rootbox');
-      root
-        .data('expanded', Object())
-        .data('monitored', Object());
-      setInterval(refresh_monitored, 60 * 1000, root.data('monitored'));
 
       var socket = io.connect(
         '//' + location.hostname
@@ -211,56 +198,58 @@
         update_levels($('#rootbox'));
       });
 
-      $('#rootbox').on("click", ".toggle-box", function() {
+      var render_boxes_here = function () {
+        render_boxes($('#rootbox'), $('#groups'), $('#tags_control'));
+        update_levels($('#rootbox'));
+      }
+
+      $('#rootbox')
+      .data('expanded', Object())
+      .data('monitored', Object())
+      .on("click", "button.process-action", process_action)
+      .on("click", "button.group-action", group_action)
+      .on("click", ".toggle-box", function() {
         var box = $(this).closest('.box');
         toggle_box_expand(box);
       });
 
-      $('#tags_control').on("toggle", "input.group", function() {
+      setInterval(refresh_monitored, 60 * 1000,
+        $('#rootbox').data('monitored'));
+
+      $('#tags_control')
+      .data('axes', [])
+      .on("change", "input.group", function() {
         var name = $(this).data('attr-name');
         if ($(this).prop('checked')) {
-          axes.push(name);
+          $('#tags_control').data('axes').push(name);
         } else {
+          var axes = $('#tags_control').data('axes')
           axes.splice(axes.indexOf(name), 1);
         }
         render_boxes_here();
-      });
-
-      $('#tags_control').on("change", "input.group", function() {
-        var name = $(this).data('attr-name');
-        if ($(this).prop('checked')) {
-          axes.push(name);
-        } else {
-          axes.splice(axes.indexOf(name), 1);
-        }
+      })
+      .on("change", "input.filter", function() {
         render_boxes_here();
-      });
-
-      $('#tags_control').on("change", "input.filter", function() {
+      })
+      .on("change", '.tag-filter-mode', function() {
         render_boxes_here();
-      });
-
-      $('#tag-filter-mode').on("change", function() {
-        render_boxes_here();
-      });
-
-      $('#tag-filter-all').on("click", function() {
+      })
+      .on("click", '.tag-filter-all', function() {
         $('#tags_control input.filter').prop('checked', true);
         $('#tags_control label.tag').addClass('active');
         render_boxes_here();
-      });
-
-      $('#tag-filter-none').on("click", function() {
+      })
+      .on("click", '.tag-filter-none', function() {
         $('#tags_control input.filter').prop('checked', false);
         $('#tags_control label.tag').removeClass('active');
         render_boxes_here();
       });
 
-      $('#rootbox').on("click", "button.process-action", process_action);
-      $('#rootbox').on("click", "button.group-action", group_action);
-
-      render_tags_controls(processes);
+      var data = {{data|safe}};
+      var processes = data2procs(data);
+      render_tags_controls($('#tags_control'), processes);
       render_groups(processes, $('#groups'));
+
       render_boxes_here();
     });
   </script>
