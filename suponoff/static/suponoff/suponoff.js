@@ -282,7 +282,7 @@ function group_action() {
     if (box.hasClass('procgroup')) {
         groups = box;
     } else {
-        groups = box.find('.procgroup');
+        groups = box.find('.procgroup:visible');
     }
 
     var data = {
@@ -676,15 +676,7 @@ function get_box_path(box) {
 }
 
 function toggle_box_expand(box, monitored, expanded) {
-    var ch = box.find('.children').first();
-    if (ch.is(':visible')) {
-        ch.hide();
-        expanded[get_box_path(box)] = false;
-        set_group_monitor(box, monitored, false);
-    }
-    else {
-        ch.show();
-        expanded[get_box_path(box)] = true;
-        set_group_monitor(box, monitored, true);
-    }
+    var exp = box.toggleClass('expanded').hasClass('expanded');
+    expanded[get_box_path(box)] = exp;
+    set_group_monitor(box, monitored, exp);
 }

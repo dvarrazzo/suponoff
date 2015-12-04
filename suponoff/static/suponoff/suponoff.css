@@ -60,6 +60,13 @@ div.box h3 {
     display: block;
 }
 
+.box > .children {
+    display: none;
+}
+.box.expanded > .children {
+    display: block;
+}
+
 .box .buttons {
     float: right;
     margin-left: 0.2em;
